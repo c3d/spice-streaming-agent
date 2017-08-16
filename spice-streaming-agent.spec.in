@@ -10,6 +10,7 @@ BuildRequires:  spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
 BuildRequires:  libX11-devel libXfixes-devel
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  catch-devel
+BuildRequires:  pkgconfig(udev)
 # we need /usr/sbin/semanage program which is available on different
 # packages depending on distribution
 Requires(post): /usr/sbin/semanage
@@ -31,7 +32,7 @@ agent plugins.
 %setup -q
 
 %build
-%configure --enable-tests
+%configure --enable-tests --with-udevrulesdir=%{_udevrulesdir}
 make %{?_smp_mflags} V=1
 
 %check
@@ -55,6 +56,7 @@ fi
 
 %files
 %doc COPYING ChangeLog README
+%{_udevrulesdir}/90-spice-guest-streaming.rules
 %{_bindir}/spice-streaming-agent
 %{_sysconfdir}/xdg/autostart/spice-streaming.desktop
 %{_datadir}/gdm/greeter/autostart/spice-streaming.desktop

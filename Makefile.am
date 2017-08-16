@@ -16,8 +16,12 @@ gdmautostart_DATA = $(builddir)/data/spice-streaming.desktop
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = spice-streaming-agent.pc
 
+udevrulesdir = $(UDEVRULESDIR)
+udevrules_DATA = $(srcdir)/data/90-spice-guest-streaming.rules
+
 EXTRA_DIST = \
 	spice-streaming-agent.spec \
 	spice-streaming-agent.pc \
+	data/90-spice-guest-streaming.rules \
 	data/spice-streaming.desktop \
 	$(NULL)

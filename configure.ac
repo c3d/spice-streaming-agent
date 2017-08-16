@@ -53,6 +53,13 @@ PKG_CHECK_MODULES(JPEG, libjpeg, , [
 ])
 AC_SUBST(JPEG_LIBS)
 
+AC_ARG_WITH(udevrulesdir,
+    [AS_HELP_STRING([--with-udevrulesdir=DIR], [udev rules.d directory])],
+    [UDEVRULESDIR="$withval"],
+    [UDEVRULESDIR='${prefix}/lib/udev/rules.d']
+)
+AC_SUBST(UDEVRULESDIR)
+
 dnl ===========================================================================
 dnl check compiler flags
 
