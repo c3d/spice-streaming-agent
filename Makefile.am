@@ -18,6 +18,5 @@ pkgconfig_DATA = spice-streaming-agent.pc
 EXTRA_DIST = \
 	spice-streaming-agent.spec \
 	spice-streaming-agent.pc \
-	LICENSE \
 	data/spice-streaming.desktop \
 	$(NULL)

@@ -3,7 +3,7 @@ Version:        @VERSION@
 Release:        1%{?dist}
 Summary:        SPICE streaming agent
 Group:          Applications/System
-License:        Proprietary
+License:        ASL 2.0
 URL:            https://www.redhat.com
 Source0:        %{name}-%{version}.tar.bz2
 BuildRequires:  spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
@@ -49,7 +49,7 @@ fi
 
 
 %files
-%doc COPYING ChangeLog README LICENSE
+%doc COPYING ChangeLog README
 %{_bindir}/spice-streaming-agent
 %{_sysconfdir}/xdg/autostart/spice-streaming.desktop
 %{_datadir}/gdm/greeter/autostart/spice-streaming.desktop
