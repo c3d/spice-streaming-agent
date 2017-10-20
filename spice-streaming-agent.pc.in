@@ -1,0 +1,12 @@
+prefix=@prefix@
+includedir=@includedir@
+exec_prefix=@exec_prefix@
+plugindir=@libdir@/@PACKAGE@/plugins
+
+Name: spice-streaming-agent
+Description: SPICE streaming agent headers
+Version: @VERSION@
+Requires: spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
+
+Libs:
+Cflags: -I${includedir}

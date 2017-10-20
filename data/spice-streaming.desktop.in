@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=SPICE Streaming Agent
+Comment=Agent for Streaming the framebuffer to Spice
+Exec=@BINDIR@/spice-streaming-agent
+#TryExec=/usr/bin/spice-streaming-agent
+Terminal=false
+Type=Application
+Categories=
+X-GNOME-Autostart-Phase=Application

@@ -1,0 +1,64 @@
+Name:           spice-streaming-agent
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        SPICE streaming agent
+Group:          Applications/System
+License:        Proprietary
+URL:            https://www.redhat.com
+Source0:        %{name}-%{version}.tar.bz2
+BuildRequires:  spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
+BuildRequires:  libX11-devel libXfixes-devel
+BuildRequires:  libjpeg-turbo-devel
+# we need /usr/sbin/semanage program which is available on different
+# packages depending on distribution
+Requires(post): /usr/sbin/semanage
+Requires(postun): /usr/sbin/semanage
+
+%description
+An agent, running on a guest, sending video streams of the X display to a remote client (over Spice)
+
+%package devel
+Requires: spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
+Summary:  SPICE streaming agent development files
+
+%description devel
+This package contains necessary header files to build SPICE streaming
+agent plugins.
+
+%prep
+%setup -q
+
+%build
+%configure
+make %{?_smp_mflags} V=1
+
+%install
+make install DESTDIR=$RPM_BUILD_ROOT V=1
+if test -d "$RPM_BUILD_ROOT/%{_libdir}/%{name}/plugins"; then
+    find $RPM_BUILD_ROOT/%{_libdir}/%{name}/plugins -name '*.la' -delete
+fi
+
+%post
+semanage fcontext -a -t xserver_exec_t %{_bindir}/spice-streaming-agent 2>/dev/null || :
+restorecon %{_bindir}/spice-streaming-agent || :
+
+%postun
+if [ $1 -eq 0 ] ; then  # final removal
+semanage fcontext -d -t xserver_exec_t %{_bindir}/spice-streaming-agent 2>/dev/null || :
+fi
+
+
+%files
+%doc COPYING ChangeLog README LICENSE
+%{_bindir}/spice-streaming-agent
+%{_sysconfdir}/xdg/autostart/spice-streaming.desktop
+%{_datadir}/gdm/greeter/autostart/spice-streaming.desktop
+
+%files devel
+%defattr(-,root,root,-)
+%{_includedir}
+%{_datadir}/pkgconfig
+
+%changelog
+* Wed Aug 16 2017 Frediano Ziglio <fziglio@redhat.com>
+- Initial package

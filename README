@@ -1,0 +1,52 @@
+Introduction
+============
+
+The SPICE Streaming Agent is a guest-side daemon which captures the
+guest X.Org output, encodes it to H.264 using hardware encoding (NVIDIA-only at
+the moment), and forwards the resulting stream to the host to be sent through
+SPICE.
+
+
+Virtual Machine Configuration
+=============================
+
+In order to set up streaming, qemu needs to expose a
+`com.redhat.stream.0` virtio port, associated with a
+corresponding Spice port.
+
+Using virt-manager
+------------------
+
+In the hardware details, click on "Add Hardware", then select
+"Channel". Add a "Spice port" device type with the
+"com.redhat.stream.0" name. You also need to set "Channel" to
+"com.redhat.stream.0"
+
+
+Using libvirt
+-------------
+
+[source,xml]
+<devices>
+    <channel type='spiceport'>
+        <source channel='com.redhat.stream.0'/>
+        <target type='virtio' name='com.redhat.stream.0'/>
+    </channel>
+</devices>
+
+Using QEMU
+----------
+
+[source,sh]
+-device virtserialport,bus=virtio-serial0.0,nr=1,chardev=charchannel1,id=channel1,name=com.redhat.stream.0 -chardev spiceport,name=com.redhat.stream.0,id=charchannel1
+
+
+NVIDIA-specific Configuration
+=============================
+
+In order to use NVIDIA hardware-accelerated encoding, you will need to
+configure the virtual machine to use mdev/vfio. An NVIDIA card has to be listed
+in lspci output on the guest.
+
+The guest also needs to have the NVIDIA proprietary drivers installed and in
+use.
