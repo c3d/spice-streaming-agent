@@ -5,7 +5,7 @@ Summary:        SPICE streaming agent
 Group:          Applications/System
 License:        ASL 2.0
 URL:            https://www.redhat.com
-Source0:        %{name}-%{version}.tar.bz2
+Source0:        %{name}-%{version}.tar.xz
 BuildRequires:  spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
 BuildRequires:  libX11-devel libXfixes-devel
 BuildRequires:  libjpeg-turbo-devel
