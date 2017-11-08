@@ -12,7 +12,7 @@ xdgautostart_DATA = $(top_srcdir)/data/spice-streaming.desktop
 gdmautostartdir = $(datadir)/gdm/greeter/autostart
 gdmautostart_DATA = $(top_srcdir)/data/spice-streaming.desktop
 
-pkgconfigdir = $(datadir)/pkgconfig
+pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = spice-streaming-agent.pc
 
 EXTRA_DIST = \

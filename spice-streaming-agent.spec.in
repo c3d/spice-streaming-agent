@@ -57,7 +57,7 @@ fi
 %files devel
 %defattr(-,root,root,-)
 %{_includedir}
-%{_datadir}/pkgconfig
+%{_libdir}/pkgconfig
 
 %changelog
 * Wed Aug 16 2017 Frediano Ziglio <fziglio@redhat.com>
