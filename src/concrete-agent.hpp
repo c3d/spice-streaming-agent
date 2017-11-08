@@ -7,6 +7,7 @@
 #define SPICE_STREAMING_AGENT_CONCRETE_AGENT_HPP
 
 #include <vector>
+#include <set>
 #include <memory>
 #include <spice-streaming-agent/plugin.hpp>
 
@@ -33,7 +34,7 @@ public:
     void LoadPlugins(const std::string &directory);
     // pointer must remain valid
     void AddOption(const char *name, const char *value);
-    FrameCapture *GetBestFrameCapture();
+    FrameCapture *GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs);
     bool PluginVersionIsCompatible(unsigned pluginVersion) const override;
 private:
     void LoadPlugin(const std::string &plugin_filename);

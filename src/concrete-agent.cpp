@@ -99,7 +99,7 @@ void ConcreteAgent::LoadPlugin(const string &plugin_filename)
     }
 }
 
-FrameCapture *ConcreteAgent::GetBestFrameCapture()
+FrameCapture *ConcreteAgent::GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs)
 {
     vector<pair<unsigned, shared_ptr<Plugin>>> sorted_plugins;
 
@@ -114,6 +114,9 @@ FrameCapture *ConcreteAgent::GetBestFrameCapture()
         if (plugin.first == DontUse) {
             break;
         }
+        // check client supports the codec
+        if (codecs.find(plugin.second->VideoCodecType()) == codecs.end())
+            continue;
         FrameCapture *capture = plugin.second->CreateCapture();
         if (capture) {
             return capture;

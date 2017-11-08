@@ -53,6 +53,7 @@ struct SpiceStreamDataMessage
 };
 
 static int streaming_requested;
+static std::set<SpiceVideoCodecType> client_codecs;
 static bool quit;
 static int streamfd = -1;
 static bool stdin_ok;
@@ -144,6 +145,9 @@ static int read_command_from_device(void)
     streaming_requested = msg[0]; /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            streaming_requested ? "START" : "STOP");
+    client_codecs.clear();
+    for (int i = 1; i <= msg[0]; ++i)
+        client_codecs.insert((SpiceVideoCodecType) msg[i]);
     return 1;
 }
 
@@ -369,7 +373,7 @@ do_capture(const string &streamport, FILE *f_log)
         syslog(LOG_INFO, "streaming starts now\n");
         uint64_t time_last = 0;
 
-        std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture());
+        std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture(client_codecs));
         if (!capture)
             throw std::runtime_error("cannot find a suitable capture system");
 
