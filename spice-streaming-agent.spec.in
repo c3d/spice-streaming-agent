@@ -33,9 +33,9 @@ agent plugins.
 make %{?_smp_mflags} V=1
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT V=1
-if test -d "$RPM_BUILD_ROOT/%{_libdir}/%{name}/plugins"; then
-    find $RPM_BUILD_ROOT/%{_libdir}/%{name}/plugins -name '*.la' -delete
+make install DESTDIR=%{buildroot} V=1
+if test -d "%{buildroot}/%{_libdir}/%{name}/plugins"; then
+    find %{buildroot}/%{_libdir}/%{name}/plugins -name '*.la' -delete
 fi
 
 %post
