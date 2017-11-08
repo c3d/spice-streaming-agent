@@ -349,10 +349,6 @@ static void cursor_changes(Display *display, int event_base)
 static void
 do_capture(const string &streamport, FILE *f_log)
 {
-    std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture());
-    if (!capture)
-        throw std::runtime_error("cannot find a suitable capture system");
-
     streamfd = open(streamport.c_str(), O_RDWR);
     if (streamfd < 0)
         throw std::runtime_error("failed to open the streaming device (" +
@@ -367,8 +363,15 @@ do_capture(const string &streamport, FILE *f_log)
             }
         }
 
+        if (quit)
+            return;
+
         syslog(LOG_INFO, "streaming starts now\n");
         uint64_t time_last = 0;
+
+        std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture());
+        if (!capture)
+            throw std::runtime_error("cannot find a suitable capture system");
 
         while (!quit && streaming_requested) {
             if (++frame_count % 100 == 0) {
@@ -415,9 +418,6 @@ do_capture(const string &streamport, FILE *f_log)
             if (read_command(false) < 0) {
                 syslog(LOG_ERR, "FAILED to read command\n");
                 goto done;
-            }
-            if (!streaming_requested) {
-                capture->Reset();
             }
         }
     }
