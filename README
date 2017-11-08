@@ -2,9 +2,11 @@ Introduction
 ============
 
 The SPICE Streaming Agent is a guest-side daemon which captures the
-guest X.Org output, encodes it to H.264 using hardware encoding (NVIDIA-only at
-the moment), and forwards the resulting stream to the host to be sent through
-SPICE.
+guest video output, encodes it to a video stream,and forwards the resulting
+stream to the host to be sent through SPICE. The capture and encoding are done
+through the use of plugins, so a variety of video format and capture/encoding
+methods (hardware/software) can be used. For now, spice-streaming-agent only
+provides software encoding to MJPEG.
 
 
 Virtual Machine Configuration
@@ -39,14 +41,3 @@ Using QEMU
 
 [source,sh]
 -device virtserialport,bus=virtio-serial0.0,nr=1,chardev=charchannel1,id=channel1,name=com.redhat.stream.0 -chardev spiceport,name=com.redhat.stream.0,id=charchannel1
-
-
-NVIDIA-specific Configuration
-=============================
-
-In order to use NVIDIA hardware-accelerated encoding, you will need to
-configure the virtual machine to use mdev/vfio. An NVIDIA card has to be listed
-in lspci output on the guest.
-
-The guest also needs to have the NVIDIA proprietary drivers installed and in
-use.
