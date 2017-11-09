@@ -32,4 +32,11 @@ test_hexdump_LDADD = \
 	../libstreaming-utils.a \
 	$(NULL)
 
-EXTRA_DIST = hexdump.sh hexdump*.in hexdump*.out
+EXTRA_DIST = \
+	hexdump.sh \
+	hexdump1.in \
+	hexdump1.out \
+	hexdump2.in \
+	hexdump2.out \
+	hexdump3.in \
+	hexdump3.out
