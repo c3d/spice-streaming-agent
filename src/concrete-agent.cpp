@@ -25,7 +25,6 @@ using namespace spice::streaming_agent;
 
 ConcreteAgent::ConcreteAgent()
 {
-    options.push_back(ConcreteConfigureOption(nullptr, nullptr));
 }
 
 void ConcreteAgent::Register(std::shared_ptr<Plugin> plugin)
@@ -33,22 +32,14 @@ void ConcreteAgent::Register(std::shared_ptr<Plugin> plugin)
     plugins.push_back(plugin);
 }
 
-const ConfigureOption* ConcreteAgent::Options() const
-{
-    static_assert(sizeof(ConcreteConfigureOption) == sizeof(ConfigureOption),
-                  "ConcreteConfigureOption should be binary compatible with ConfigureOption");
-    return static_cast<const ConfigureOption*>(&options[0]);
-}
-
 void ConcreteAgent::AddOption(const char *name, const char *value)
 {
-    // insert before the last {nullptr, nullptr} value
-    options.insert(--options.end(), ConcreteConfigureOption(name, value));
+    options.push_back(Option(name, value));
 }
 
-void ConcreteAgent::LoadPlugins(const std::string &directory)
+void ConcreteAgent::LoadPlugins(const char *directory)
 {
-    std::string pattern = directory + "/*.so";
+    std::string pattern = std::string(directory) + "/*.so";
     glob_t globbuf;
 
     int glob_result = glob(pattern.c_str(), 0, NULL, &globbuf);
@@ -110,7 +101,7 @@ FrameCapture *ConcreteAgent::GetBestFrameCapture(const std::set<SpiceVideoCodecT
     std::vector<std::pair<unsigned, std::shared_ptr<Plugin>>> sorted_plugins;
 
     // sort plugins base on ranking, reverse order
-    for (const auto& plugin: plugins) {
+    for (auto& plugin: plugins) {
         sorted_plugins.push_back(make_pair(plugin->Rank(), plugin));
     }
     sort(sorted_plugins.rbegin(), sorted_plugins.rend());
@@ -123,6 +114,7 @@ FrameCapture *ConcreteAgent::GetBestFrameCapture(const std::set<SpiceVideoCodecT
         // check client supports the codec
         if (codecs.find(plugin.second->VideoCodecType()) == codecs.end())
             continue;
+        SendOptionsToPlugin(plugin.second.get());
         FrameCapture *capture = plugin.second->CreateCapture();
         if (capture) {
             return capture;
@@ -241,5 +233,21 @@ void ConcreteAgent::check_if_quitting()
     if (quit_requested()) {
         syslog(LOG_INFO, "quit was requested, throwing QuitRequested");
         throw QuitRequested();
+    }
+}
+
+void ConcreteAgent::SendOptionsToPlugin(Plugin *plugin)
+{
+    for (const auto &opt : options) {
+        string error;
+        bool known = plugin->ApplyOption(opt.name, opt.value, error);
+        if (!known) {
+            syslog(LOG_ERR, "Plugin did not recognize option %s",
+                   opt.name);
+        }
+        if (error != "") {
+            syslog(LOG_ERR, "Plugin did not accept %s=%s: %s",
+                   opt.name, opt.value, error.c_str());
+        }
     }
 }

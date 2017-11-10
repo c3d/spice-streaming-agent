@@ -9,7 +9,8 @@
 
 #include <spice/enums.h>
 #include <memory>
-
+#include <string>
+#include <climits>
 
 /*!
  * \file
@@ -21,6 +22,8 @@
 
 namespace spice {
 namespace streaming_agent {
+
+using std::string;
 
 class FrameCapture;
 
@@ -38,8 +41,8 @@ class FrameCapture;
  * set PluginInterfaceOldestCompatibleVersion to the last known compatible version.
  */
 enum Constants : unsigned {
-    PluginInterfaceVersion = 2,
-    PluginInterfaceOldestCompatibleVersion = 2
+    PluginInterfaceVersion = 3,
+    PluginInterfaceOldestCompatibleVersion = 3
 };
 
 enum Ranks : unsigned {
@@ -53,18 +56,6 @@ enum Ranks : unsigned {
     HardwareMin = 0x80000000,
     /// plugin provides access to specific card hardware not only for compression
     SpecificHardwareMin = 0xC0000000
-};
-
-/*!
- * Configuration option.
- * An array of these will be passed to the plugin.
- * Simply a couple name and value passed as string.
- * For instance "framerate" and "20".
- */
-struct ConfigureOption
-{
-    const char *name;
-    const char *value;
 };
 
 /*!
@@ -103,6 +94,28 @@ public:
      * Get video codec used to encode last frame
      */
     virtual SpiceVideoCodecType VideoCodecType() const = 0;
+
+    /*!
+     * Apply a given option.
+     * \return true if the option is valid, or else set \arg error message
+     */
+    virtual bool ApplyOption(const string &name,
+                             const string &value,
+                             string &error) { return BaseOptions(name, value, error); }
+
+protected:
+    int OptionValueAsInt(const string &name, const string &value, string &error,
+                         int min=INT_MIN, int max=INT_MAX);
+    bool BaseOptions(const string &name, const string &value, string &error);
+
+public:
+    /*!
+     * Settings that should be recognized by all plugins
+     */
+    unsigned    framerate = 30;         // Acceptable range is 1-240
+    unsigned    quality =   80;         // Normalized range is 0-100 (100=high)
+    unsigned    avg_bitrate = 3000000;  // Target average bitrate
+    unsigned    max_bitrate = 8000000;  // Target maximum bitrate
 };
 
 /*!
@@ -119,14 +132,6 @@ public:
      * Register a plugin in the system.
      */
     virtual void Register(std::shared_ptr<Plugin> plugin) = 0;
-
-    /*!
-     * Get options array.
-     * Array is terminated with {nullptr, nullptr}.
-     * Never nullptr.
-     * \todo passing options to entry point instead?
-     */
-    virtual const ConfigureOption* Options() const = 0;
 };
 
 typedef bool PluginInitFunc(spice::streaming_agent::Agent* agent);

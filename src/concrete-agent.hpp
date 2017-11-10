@@ -19,25 +19,24 @@ namespace streaming_agent {
 class Stream;
 class FrameLog;
 
-struct ConcreteConfigureOption: ConfigureOption
+struct Option
 {
-    ConcreteConfigureOption(const char *name, const char *value)
-    {
-        this->name = name;
-        this->value = value;
-    }
+    const char *name;
+    const char *value;
+    Option(const char *name, const char *value)
+        : name(name), value(value) { }
 };
 
 class ConcreteAgent final : public Agent
 {
 public:
     ConcreteAgent();
-    void Register(std::shared_ptr<Plugin> plugin) override;
-    const ConfigureOption* Options() const override;
-    void LoadPlugins(const std::string &directory);
     void CaptureLoop(Stream &stream, FrameLog &frame_log);
+    void Register(std::shared_ptr<Plugin> plugin) override;
+    void LoadPlugins(const char *directory);
     // pointer must remain valid
     void AddOption(const char *name, const char *value);
+    void SendOptionsToPlugin(Plugin *plugin);
     FrameCapture *GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs);
     // TODO: Move these to the Agent interface for use by plugins
     static void register_interrupts();
@@ -49,7 +48,7 @@ private:
     static void handle_interrupt(int intr);
     static std::atomic<bool> must_quit;
     std::vector<std::shared_ptr<Plugin>> plugins;
-    std::vector<ConcreteConfigureOption> options;
+    std::vector<Option> options;
 };
 
 }} // namespace spice::streaming_agent

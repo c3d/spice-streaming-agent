@@ -24,12 +24,11 @@ class MjpegPlugin final: public Plugin
 public:
     FrameCapture *CreateCapture() override;
     unsigned Rank() override;
-    void ParseOptions(const ConfigureOption *options);
-    MjpegSettings Options() const;  // TODO unify on Settings vs Options
     SpiceVideoCodecType VideoCodecType() const override;
+    bool ApplyOption(const string &name,
+                     const string &value,
+                     string &error) override;
     static bool Register(Agent* agent);
-private:
-    MjpegSettings settings = { 10, 80 };
 };
 
 }} // namespace spice::streaming_agent

@@ -35,7 +35,7 @@ namespace {
 class MjpegFrameCapture final: public FrameCapture
 {
 public:
-    MjpegFrameCapture(const MjpegSettings &settings);
+    MjpegFrameCapture(unsigned framerate, unsigned quality);
     ~MjpegFrameCapture();
     FrameInfo CaptureFrame() override;
     void Reset() override;
@@ -43,8 +43,9 @@ public:
         return SPICE_VIDEO_CODEC_TYPE_MJPEG;
     }
 private:
-    MjpegSettings settings;
     Display *dpy;
+    unsigned framerate;
+    unsigned quality;
 
     std::vector<uint8_t> frame;
 
@@ -56,8 +57,8 @@ private:
 
 }
 
-MjpegFrameCapture::MjpegFrameCapture(const MjpegSettings& settings):
-    settings(settings)
+MjpegFrameCapture::MjpegFrameCapture(unsigned framerate, unsigned quality)
+    : framerate(framerate), quality(quality)
 {
     dpy = XOpenDisplay(NULL);
     if (!dpy)
@@ -84,7 +85,7 @@ FrameInfo MjpegFrameCapture::CaptureFrame()
     if (last_time == 0) {
         last_time = now;
     } else {
-        const uint64_t delta = 1000000000u / settings.fps;
+        const uint64_t delta = 1000000000u / framerate;
         if (now >= last_time + delta) {
             last_time = now;
         } else {
@@ -126,8 +127,8 @@ FrameInfo MjpegFrameCapture::CaptureFrame()
 
     // TODO handle errors
     // TODO multiple formats (only 32 bit)
-    write_JPEG_file(frame, settings.quality, (uint8_t*) image->data,
-                    image->width, image->height);
+    write_JPEG_file(frame, quality,
+                    (uint8_t*) image->data, image->width, image->height);
 
     image->f.destroy_image(image);
 
@@ -141,7 +142,7 @@ FrameInfo MjpegFrameCapture::CaptureFrame()
 
 FrameCapture *MjpegPlugin::CreateCapture()
 {
-    return new MjpegFrameCapture(settings);
+    return new MjpegFrameCapture(framerate, quality);
 }
 
 unsigned MjpegPlugin::Rank()
@@ -149,32 +150,12 @@ unsigned MjpegPlugin::Rank()
     return FallBackMin;
 }
 
-void MjpegPlugin::ParseOptions(const ConfigureOption *options)
+bool MjpegPlugin::ApplyOption(const string &name,
+                              const string &value,
+                              string &error)
 {
-    for (; options->name; ++options) {
-        const std::string name = options->name;
-        const std::string value = options->value;
-
-        if (name == "framerate") {
-            try {
-                settings.fps = stoi(value);
-            } catch (const std::exception &e) {
-                throw OptionValueError("invalid MJPEG framerate",
-                                       options->value, "mjpeg.framerate");
-            }
-        } else if (name == "mjpeg.quality") {
-            try {
-                settings.quality = stoi(value);
-            } catch (const std::exception &e) {
-                throw OptionValueError("invalid MJPEG quality", options->value, "mjpeg.quality");
-            }
-        }
-    }
-}
-
-MjpegSettings MjpegPlugin::Options() const
-{
-    return settings;
+    // This plugin only relies on base options
+    return Plugin::ApplyOption(name, value, error);
 }
 
 SpiceVideoCodecType MjpegPlugin::VideoCodecType() const {
@@ -183,15 +164,6 @@ SpiceVideoCodecType MjpegPlugin::VideoCodecType() const {
 
 bool MjpegPlugin::Register(Agent* agent)
 {
-    std::shared_ptr<MjpegPlugin> plugin(new MjpegPlugin());
-
-    try {
-        plugin->ParseOptions(agent->Options());
-    } catch (const std::exception &e) {
-        syslog(LOG_ERR, "Error parsing plugin option: %s\n", e.what());
-    }
-
-    agent->Register(plugin);
-
+    agent->Register(std::make_shared<MjpegPlugin>());
     return true;
 }
