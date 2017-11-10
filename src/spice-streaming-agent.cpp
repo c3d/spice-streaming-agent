@@ -148,7 +148,7 @@ static int read_command(int blocking)
 {
     int fd, n=1;
     int timeout = blocking?-1:0;
-    while ( !quit ) {
+    while (!quit) {
         if (!have_something_to_read(&fd, timeout)) {
             if (!blocking) {
                 return 0;
@@ -184,7 +184,6 @@ write_all(int fd, const void *buf, const size_t len)
     syslog(LOG_DEBUG, "write_all -- %u bytes written\n", (unsigned)written);
     return written;
 }
-
 
 static int spice_stream_send_format(unsigned w, unsigned h, unsigned c)
 {
@@ -441,7 +440,7 @@ int main(int argc, char* argv[])
     if (isatty(fileno(stderr)) && isatty(fileno(stdin))) {
         stdin_ok = true;
     }
-    
+
     openlog("spice-streaming-agent", stdin_ok? (LOG_PERROR|LOG_PID) : LOG_PID, LOG_USER);
     setlogmask(logmask);
 
@@ -526,4 +525,3 @@ int main(int argc, char* argv[])
     closelog();
     return ret;
 }
-
