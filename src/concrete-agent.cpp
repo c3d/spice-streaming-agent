@@ -28,9 +28,9 @@ ConcreteAgent::ConcreteAgent()
     options.push_back(ConcreteConfigureOption(nullptr, nullptr));
 }
 
-void ConcreteAgent::Register(Plugin& plugin)
+void ConcreteAgent::Register(std::shared_ptr<Plugin> plugin)
 {
-    plugins.push_back(std::shared_ptr<Plugin>(&plugin));
+    plugins.push_back(plugin);
 }
 
 const ConfigureOption* ConcreteAgent::Options() const

@@ -183,7 +183,7 @@ SpiceVideoCodecType MjpegPlugin::VideoCodecType() const {
 
 bool MjpegPlugin::Register(Agent* agent)
 {
-    std::unique_ptr<MjpegPlugin> plugin(new MjpegPlugin());
+    std::shared_ptr<MjpegPlugin> plugin(new MjpegPlugin());
 
     try {
         plugin->ParseOptions(agent->Options());
@@ -191,7 +191,7 @@ bool MjpegPlugin::Register(Agent* agent)
         syslog(LOG_ERR, "Error parsing plugin option: %s\n", e.what());
     }
 
-    agent->Register(*plugin.release());
+    agent->Register(plugin);
 
     return true;
 }
