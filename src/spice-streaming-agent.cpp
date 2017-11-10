@@ -146,7 +146,7 @@ static int read_command_from_device(void)
     return 1;
 }
 
-static int read_command(int blocking)
+static int read_command(bool blocking)
 {
     int fd, n=1;
     int timeout = blocking?-1:0;
