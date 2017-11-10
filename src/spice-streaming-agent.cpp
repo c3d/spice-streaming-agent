@@ -39,15 +39,17 @@ using namespace SpiceStreamingAgent;
 
 static ConcreteAgent agent;
 
-typedef struct {
+struct SpiceStreamFormatMessage
+{
     StreamDevHeader hdr;
     StreamMsgFormat msg;
-} SpiceStreamFormatMessage;
+};
 
-typedef struct {
+struct SpiceStreamDataMessage
+{
     StreamDevHeader hdr;
     StreamMsgData msg;
-} SpiceStreamDataMessage;
+};
 
 static int streaming_requested;
 static bool quit;
