@@ -8,6 +8,8 @@
 #define SPICE_STREAMING_AGENT_PLUGIN_HPP
 
 #include <spice/enums.h>
+#include <memory>
+
 
 /*!
  * \file
@@ -36,8 +38,8 @@ class FrameCapture;
  * set PluginInterfaceOldestCompatibleVersion to the last known compatible version.
  */
 enum Constants : unsigned {
-    PluginInterfaceVersion = 1,
-    PluginInterfaceOldestCompatibleVersion = 1
+    PluginInterfaceVersion = 2,
+    PluginInterfaceOldestCompatibleVersion = 2
 };
 
 enum Ranks : unsigned {
@@ -116,7 +118,7 @@ public:
     /*!
      * Register a plugin in the system.
      */
-    virtual void Register(Plugin& plugin) = 0;
+    virtual void Register(std::shared_ptr<Plugin> plugin) = 0;
 
     /*!
      * Get options array.

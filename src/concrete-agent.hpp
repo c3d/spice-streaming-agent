@@ -32,7 +32,7 @@ class ConcreteAgent final : public Agent
 {
 public:
     ConcreteAgent();
-    void Register(Plugin& plugin) override;
+    void Register(std::shared_ptr<Plugin> plugin) override;
     const ConfigureOption* Options() const override;
     void LoadPlugins(const std::string &directory);
     void CaptureLoop(Stream &stream, FrameLog &frame_log);
