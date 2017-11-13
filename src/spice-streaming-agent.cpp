@@ -277,9 +277,6 @@ static void usage(const char *progname)
     printf("\t--log-binary -- log binary frames (following -l)\n");
     printf("\t-d -- enable debug logs\n");
     printf("\t-c variable=value -- change settings\n");
-    printf("\t\tprofile = [0, 1, 66, 77, 100, 244]\n");
-    printf("\t\tratecontrol = constqp/vbr/cbr/2passq/2passf/2passi\n");
-    printf("\t\tdwqp = 0-51\n");
     printf("\t\tframerate = 1-100 (check 10,20,30,40,50,60)\n");
     printf("\n");
     printf("\t-h or --help     -- print this help message\n");
