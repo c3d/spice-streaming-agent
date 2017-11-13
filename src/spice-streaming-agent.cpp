@@ -289,7 +289,8 @@ static void usage(const char *progname)
 
 static void send_cursor(const XFixesCursorImage &image)
 {
-    if (image.width >= 1024 || image.height >= 1024)
+    if (image.width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
+        image.height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT)
         return;
 
     size_t cursor_size =
