@@ -355,7 +355,7 @@ do_capture(const char *streamport, FILE *f_log)
     unsigned int frame_count = 0;
     while (! quit) {
         while (!quit && !streaming_requested) {
-            if (read_command(1) < 0) {
+            if (read_command(true) < 0) {
                 syslog(LOG_ERR, "FAILED to read command\n");
                 goto done;
             }
@@ -406,7 +406,7 @@ do_capture(const char *streamport, FILE *f_log)
                 break;
             }
             //usleep(1);
-            if (read_command(0) < 0) {
+            if (read_command(false) < 0) {
                 syslog(LOG_ERR, "FAILED to read command\n");
                 goto done;
             }
