@@ -22,6 +22,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <functional>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xfixes.h>
 
@@ -284,15 +285,17 @@ static void usage(const char *progname)
     exit(1);
 }
 
-static void send_cursor(const XFixesCursorImage &image)
+static void
+send_cursor(unsigned width, unsigned height, int hotspot_x, int hotspot_y,
+            std::function<void(uint32_t *)> fill_cursor)
 {
-    if (image.width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
-        image.height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT)
+    if (width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
+        height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT)
         return;
 
     size_t cursor_size =
         sizeof(StreamDevHeader) + sizeof(StreamMsgCursorSet) +
-        image.width * image.height * sizeof(uint32_t);
+        width * height * sizeof(uint32_t);
     std::unique_ptr<uint8_t[]> msg(new uint8_t[cursor_size]);
 
     StreamDevHeader &dev_hdr(*reinterpret_cast<StreamDevHeader*>(msg.get()));
@@ -305,14 +308,13 @@ static void send_cursor(const XFixesCursorImage &image)
     memset(&cursor_msg, 0, sizeof(cursor_msg));
 
     cursor_msg.type = SPICE_CURSOR_TYPE_ALPHA;
-    cursor_msg.width = image.width;
-    cursor_msg.height = image.height;
-    cursor_msg.hot_spot_x = image.xhot;
-    cursor_msg.hot_spot_y = image.yhot;
+    cursor_msg.width = width;
+    cursor_msg.height = height;
+    cursor_msg.hot_spot_x = hotspot_x;
+    cursor_msg.hot_spot_y = hotspot_y;
 
     uint32_t *pixels = reinterpret_cast<uint32_t *>(cursor_msg.data);
-    for (unsigned i = 0; i < image.width * image.height; ++i)
-        pixels[i] = image.pixels[i];
+    fill_cursor(pixels);
 
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
     write_all(streamfd, msg.get(), cursor_size);
@@ -336,7 +338,11 @@ static void cursor_changes(Display *display, int event_base)
             continue;
 
         last_serial = cursor->cursor_serial;
-        send_cursor(*cursor);
+        auto fill_cursor = [&](uint32_t *pixels) {
+            for (unsigned i = 0; i < cursor->width * cursor->height; ++i)
+                pixels[i] = cursor->pixels[i];
+        };
+        send_cursor(cursor->width, cursor->height, cursor->xhot, cursor->yhot, fill_cursor);
     }
 }
 
