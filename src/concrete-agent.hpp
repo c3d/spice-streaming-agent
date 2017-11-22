@@ -27,16 +27,12 @@ class ConcreteAgent final : public Agent
 {
 public:
     ConcreteAgent();
-    unsigned Version() const override {
-        return PluginVersion;
-    }
     void Register(Plugin& plugin) override;
     const ConfigureOption* Options() const override;
     void LoadPlugins(const std::string &directory);
     // pointer must remain valid
     void AddOption(const char *name, const char *value);
     FrameCapture *GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs);
-    bool PluginVersionIsCompatible(unsigned pluginVersion) const override;
 private:
     void LoadPlugin(const std::string &plugin_filename);
     std::vector<std::shared_ptr<Plugin>> plugins;
