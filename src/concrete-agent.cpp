@@ -81,7 +81,8 @@ void ConcreteAgent::LoadPlugin(const char *plugin_filename)
 {
     void *dl = dlopen(plugin_filename, RTLD_LOCAL|RTLD_NOW);
     if (!dl) {
-        syslog(LOG_ERR, "error loading plugin %s", plugin_filename);
+        syslog(LOG_ERR, "error loading plugin %s: %s",
+               plugin_filename, dlerror());
         return;
     }
 
