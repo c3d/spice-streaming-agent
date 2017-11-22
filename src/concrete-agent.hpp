@@ -32,9 +32,6 @@ class ConcreteAgent final : public Agent
 {
 public:
     ConcreteAgent();
-    unsigned Version() const override {
-        return PluginVersion;
-    }
     void Register(Plugin& plugin) override;
     const ConfigureOption* Options() const override;
     void LoadPlugins(const std::string &directory);
@@ -42,7 +39,6 @@ public:
     // pointer must remain valid
     void AddOption(const char *name, const char *value);
     FrameCapture *GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs);
-    bool PluginVersionIsCompatible(unsigned pluginVersion) const override;
     // TODO: Move these to the Agent interface for use by plugins
     static void register_interrupts();
     static bool quit_requested() { return must_quit; }
@@ -54,8 +50,6 @@ private:
     static std::atomic<bool> must_quit;
     std::vector<std::shared_ptr<Plugin>> plugins;
     std::vector<ConcreteConfigureOption> options;
-
-
 };
 
 }} // namespace spice::streaming_agent

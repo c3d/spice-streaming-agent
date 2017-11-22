@@ -23,26 +23,9 @@
 
 using namespace spice::streaming_agent;
 
-static inline unsigned MajorVersion(unsigned version)
-{
-    return version >> 8;
-}
-
-static inline unsigned MinorVersion(unsigned version)
-{
-    return version & 0xffu;
-}
-
 ConcreteAgent::ConcreteAgent()
 {
     options.push_back(ConcreteConfigureOption(nullptr, nullptr));
-}
-
-bool ConcreteAgent::PluginVersionIsCompatible(unsigned pluginVersion) const
-{
-    unsigned version = Version();
-    return MajorVersion(version) == MajorVersion(pluginVersion) &&
-        MinorVersion(version) >= MinorVersion(pluginVersion);
 }
 
 void ConcreteAgent::Register(Plugin& plugin)
@@ -88,6 +71,24 @@ void ConcreteAgent::LoadPlugin(const std::string &plugin_filename)
     if (!dl) {
         syslog(LOG_ERR, "error loading plugin %s: %s",
                plugin_filename.c_str(), dlerror());
+        return;
+    }
+
+    unsigned *version =
+        (unsigned *) dlsym(dl, "spice_streaming_agent_plugin_interface_version");
+    if (!version) {
+        syslog(LOG_ERR, "error loading plugin %s: no version information",
+               plugin_filename.c_str());
+        return;
+    }
+    if (*version < PluginInterfaceOldestCompatibleVersion ||
+        *version > PluginInterfaceVersion) {
+        syslog(LOG_ERR,
+               "error loading plugin %s: plugin interface version %u, "
+               "agent accepts version %u...%u",
+               plugin_filename.c_str(), *version,
+               PluginInterfaceOldestCompatibleVersion,
+               PluginInterfaceVersion);
         return;
     }
 

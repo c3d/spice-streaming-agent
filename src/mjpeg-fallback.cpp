@@ -183,9 +183,6 @@ SpiceVideoCodecType MjpegPlugin::VideoCodecType() const {
 
 bool MjpegPlugin::Register(Agent* agent)
 {
-    if (agent->Version() != PluginVersion)
-        return false;
-
     std::unique_ptr<MjpegPlugin> plugin(new MjpegPlugin());
 
     try {
