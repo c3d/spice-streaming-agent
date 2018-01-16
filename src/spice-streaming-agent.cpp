@@ -79,6 +79,24 @@ static int have_something_to_read(int timeout)
     return 0;
 }
 
+static void read_all(void *msg, size_t len)
+{
+    while (len > 0) {
+        ssize_t n = read(streamfd, msg, len);
+
+        if (n < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            throw std::runtime_error("Reading message from device failed: " +
+                                     std::string(strerror(errno)));
+        }
+
+        len -= n;
+        msg = (uint8_t *) msg + n;
+    }
+}
+
 static void handle_stream_start_stop(uint32_t len)
 {
     uint8_t msg[256];
@@ -87,11 +105,8 @@ static void handle_stream_start_stop(uint32_t len)
         throw std::runtime_error("msg size (" + std::to_string(len) + ") is too long "
                                  "(longer than " + std::to_string(sizeof(msg)) + ")");
     }
-    int n = read(streamfd, &msg, len);
-    if (n != len) {
-        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
-                                 " expected " + std::to_string(len));
-    }
+
+    read_all(msg, len);
     streaming_requested = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            streaming_requested ? "START" : "STOP");
@@ -108,12 +123,8 @@ static void handle_stream_capabilities(uint32_t len)
     if (len > sizeof(caps)) {
         throw std::runtime_error("capability message too long");
     }
-    int n = read(streamfd, caps, len);
-    if (n != len) {
-        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
-                                 " expected " + std::to_string(len));
-    }
 
+    read_all(caps, len);
     // we currently do not support extensions so just reply so
     StreamDevHeader hdr = {
         STREAM_DEVICE_PROTOCOL,
