@@ -56,11 +56,11 @@ void ConcreteAgent::AddOption(const char *name, const char *value)
     options.insert(--options.end(), ConcreteConfigureOption(name, value));
 }
 
-void ConcreteAgent::LoadPlugins(const char *directory)
+void ConcreteAgent::LoadPlugins(const string &directory)
 {
     StaticPlugin::InitAll(*this);
 
-    string pattern = string(directory) + "/*.so";
+    string pattern = directory + "/*.so";
     glob_t globbuf;
 
     int glob_result = glob(pattern.c_str(), 0, NULL, &globbuf);
@@ -77,12 +77,12 @@ void ConcreteAgent::LoadPlugins(const char *directory)
     globfree(&globbuf);
 }
 
-void ConcreteAgent::LoadPlugin(const char *plugin_filename)
+void ConcreteAgent::LoadPlugin(const string &plugin_filename)
 {
-    void *dl = dlopen(plugin_filename, RTLD_LOCAL|RTLD_NOW);
+    void *dl = dlopen(plugin_filename.c_str(), RTLD_LOCAL|RTLD_NOW);
     if (!dl) {
         syslog(LOG_ERR, "error loading plugin %s: %s",
-               plugin_filename, dlerror());
+               plugin_filename.c_str(), dlerror());
         return;
     }
 

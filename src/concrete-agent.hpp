@@ -30,13 +30,13 @@ public:
     }
     void Register(Plugin& plugin) override;
     const ConfigureOption* Options() const override;
-    void LoadPlugins(const char *directory);
+    void LoadPlugins(const std::string &directory);
     // pointer must remain valid
     void AddOption(const char *name, const char *value);
     FrameCapture *GetBestFrameCapture();
     bool PluginVersionIsCompatible(unsigned pluginVersion) const override;
 private:
-    void LoadPlugin(const char *plugin_filename);
+    void LoadPlugin(const std::string &plugin_filename);
     std::vector<std::shared_ptr<Plugin>> plugins;
     std::vector<ConcreteConfigureOption> options;
 };

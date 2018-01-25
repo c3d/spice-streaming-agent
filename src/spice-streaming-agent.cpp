@@ -347,13 +347,13 @@ static void cursor_changes(Display *display, int event_base)
 }
 
 static void
-do_capture(const char *streamport, FILE *f_log)
+do_capture(const string &streamport, FILE *f_log)
 {
     std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture());
     if (!capture)
         throw std::runtime_error("cannot find a suitable capture system");
 
-    streamfd = open(streamport, O_RDWR);
+    streamfd = open(streamport.c_str(), O_RDWR);
     if (streamfd < 0)
         // TODO was syslog(LOG_ERR, "Failed to open %s: %s\n", streamport, strerror(errno));
         throw std::runtime_error("failed to open streaming device");
@@ -433,7 +433,7 @@ done:
 
 int main(int argc, char* argv[])
 {
-    const char *streamport = "/dev/virtio-ports/com.redhat.stream.0";
+    string streamport = "/dev/virtio-ports/com.redhat.stream.0";
     char opt;
     const char *log_filename = NULL;
     int logmask = LOG_UPTO(LOG_WARNING);
