@@ -355,8 +355,8 @@ do_capture(const string &streamport, FILE *f_log)
 
     streamfd = open(streamport.c_str(), O_RDWR);
     if (streamfd < 0)
-        // TODO was syslog(LOG_ERR, "Failed to open %s: %s\n", streamport, strerror(errno));
-        throw std::runtime_error("failed to open streaming device");
+        throw std::runtime_error("failed to open the streaming device (" +
+                                 streamport + "): " + strerror(errno));
 
     unsigned int frame_count = 0;
     while (! quit) {
