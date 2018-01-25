@@ -74,7 +74,7 @@ public:
      * to initialize.
      * Plugin can also raise std::runtime_error which will be logged.
      */
-    virtual FrameCapture *CreateCapture()=0;
+    virtual FrameCapture *CreateCapture() = 0;
 
     /*!
      * Request to rank the plugin.
@@ -83,12 +83,12 @@ public:
      * is necessary as the condition for capturing frames can change
      * from the time the plugin decided to register and now.
      */
-    virtual unsigned Rank()=0;
+    virtual unsigned Rank() = 0;
 
     /*!
      * Get video codec used to encode last frame
      */
-    virtual SpiceVideoCodecType VideoCodecType() const=0;
+    virtual SpiceVideoCodecType VideoCodecType() const = 0;
 };
 
 /*!
@@ -107,18 +107,18 @@ public:
      * everything.
      * \return version specified like PluginVersion
      */
-    virtual unsigned Version() const=0;
+    virtual unsigned Version() const = 0;
 
     /*!
      * Check if a given plugin version is compatible with this agent
      * \return true is compatible
      */
-    virtual bool PluginVersionIsCompatible(unsigned pluginVersion) const=0;
+    virtual bool PluginVersionIsCompatible(unsigned pluginVersion) const = 0;
 
     /*!
      * Register a plugin in the system.
      */
-    virtual void Register(Plugin& plugin)=0;
+    virtual void Register(Plugin& plugin) = 0;
 
     /*!
      * Get options array.
@@ -126,7 +126,7 @@ public:
      * Never nullptr.
      * \todo passing options to entry point instead?
      */
-    virtual const ConfigureOption* Options() const=0;
+    virtual const ConfigureOption* Options() const = 0;
 };
 
 typedef bool PluginInitFunc(SpiceStreamingAgent::Agent* agent);

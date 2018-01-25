@@ -34,27 +34,27 @@ struct FrameInfo
 class FrameCapture
 {
 public:
-    virtual ~FrameCapture()=default;
+    virtual ~FrameCapture() = default;
 
     /*! Grab a frame
      * This function will wait for next frame.
      * Capture is started if needed.
      */
-    virtual FrameInfo CaptureFrame()=0;
+    virtual FrameInfo CaptureFrame() = 0;
 
     /*! Reset capturing
      * This will reset to beginning state
      */
-    virtual void Reset()=0;
+    virtual void Reset() = 0;
 
     /*!
      * Get video codec used to encode last frame
      */
-    virtual SpiceVideoCodecType VideoCodecType() const=0;
+    virtual SpiceVideoCodecType VideoCodecType() const = 0;
 protected:
-    FrameCapture()=default;
-    FrameCapture(const FrameCapture&)=delete;
-    void operator=(const FrameCapture&)=delete;
+    FrameCapture() = default;
+    FrameCapture(const FrameCapture&) = delete;
+    void operator=(const FrameCapture&) = delete;
 };
 
 }
