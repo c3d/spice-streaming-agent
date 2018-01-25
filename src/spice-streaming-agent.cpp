@@ -96,9 +96,9 @@ static int read_command_from_stdin(void)
     if (strcmp(cmd, "quit") == 0) {
         quit = true;
     } else if (strcmp(cmd, "start") == 0) {
-	streaming_requested = 1;
+        streaming_requested = 1;
     } else if (strcmp(cmd, "stop") == 0) {
-	streaming_requested = 0;
+        streaming_requested = 0;
     } else {
         syslog(LOG_WARNING, "unknown command %s\n", cmd);
     }
@@ -164,7 +164,7 @@ static int read_command(bool blocking)
         } else {
             n = read_command_from_stdin();
         }
-	break;
+        break;
     }
     return n;
 }
@@ -451,27 +451,27 @@ int main(int argc, char* argv[])
     setlogmask(logmask);
 
     while ((opt = getopt_long(argc, argv, "hip:c:l:d", long_options, NULL)) != -1) {
-	switch (opt) {
+        switch (opt) {
         case 0:
             /* Handle long options if needed */
             break;
-	case 'i':
+        case 'i':
             stdin_ok = true;
             openlog("spice-streaming-agent", LOG_PERROR|LOG_PID, LOG_USER);
             break;
-	case 'p':
-	    streamport = optarg;
-	    break;
-	case 'c': {
-	    char *p = strchr(optarg, '=');
-	    if (p == NULL) {
-		arg_error("wrong 'c' argument %s\n", optarg);
-		usage(argv[0]);
-	    }
+        case 'p':
+            streamport = optarg;
+            break;
+        case 'c': {
+            char *p = strchr(optarg, '=');
+            if (p == NULL) {
+                arg_error("wrong 'c' argument %s\n", optarg);
+                usage(argv[0]);
+            }
             *p++ = '\0';
             agent.AddOption(optarg, p);
-	    break;
-	}
+            break;
+        }
         case 'l':
             log_filename = optarg;
             break;
@@ -479,10 +479,10 @@ int main(int argc, char* argv[])
             logmask = LOG_UPTO(LOG_DEBUG);
             setlogmask(logmask);
             break;
-	case 'h':
-	    usage(argv[0]);
-	    break;
-	}
+        case 'h':
+            usage(argv[0]);
+            break;
+        }
     }
 
     agent.LoadPlugins(PLUGINSDIR);
