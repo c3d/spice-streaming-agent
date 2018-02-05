@@ -5,6 +5,8 @@
  */
 
 #include <config.h>
+#include "mjpeg-fallback.hpp"
+
 #include <cstring>
 #include <exception>
 #include <stdexcept>
@@ -12,9 +14,6 @@
 #include <memory>
 #include <syslog.h>
 #include <X11/Xlib.h>
-
-#include <spice-streaming-agent/plugin.hpp>
-#include <spice-streaming-agent/frame-capture.hpp>
 
 #include "static-plugin.hpp"
 #include "jpeg.hpp"
@@ -41,11 +40,6 @@ static inline uint64_t get_time()
 }
 
 namespace {
-struct MjpegSettings
-{
-    int fps;
-    int quality;
-};
 
 class MjpegFrameCapture final: public FrameCapture
 {
@@ -69,18 +63,6 @@ private:
     uint64_t last_time = 0;
 };
 
-class MjpegPlugin final: public Plugin
-{
-public:
-    FrameCapture *CreateCapture() override;
-    unsigned Rank() override;
-    void ParseOptions(const ConfigureOption *options);
-    SpiceVideoCodecType VideoCodecType() const {
-        return SPICE_VIDEO_CODEC_TYPE_MJPEG;
-    }
-private:
-    MjpegSettings settings = { 10, 80 };
-};
 }
 
 MjpegFrameCapture::MjpegFrameCapture(const MjpegSettings& settings):
@@ -203,6 +185,10 @@ void MjpegPlugin::ParseOptions(const ConfigureOption *options)
             }
         }
     }
+}
+
+SpiceVideoCodecType MjpegPlugin::VideoCodecType() const {
+    return SPICE_VIDEO_CODEC_TYPE_MJPEG;
 }
 
 static bool
