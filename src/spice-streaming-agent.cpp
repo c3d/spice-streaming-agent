@@ -36,6 +36,7 @@
 
 #include "hexdump.h"
 #include "concrete-agent.hpp"
+#include "mjpeg-fallback.hpp"
 
 using namespace spice::streaming_agent;
 
@@ -449,6 +450,9 @@ int main(int argc, char* argv[])
             break;
         }
     }
+
+    // register built-in plugins
+    MjpegPlugin::Register(&agent);
 
     agent.LoadPlugins(PLUGINSDIR);
 

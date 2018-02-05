@@ -39,7 +39,6 @@ test_mjpeg_fallback_SOURCES = \
 	test-mjpeg-fallback.cpp \
 	../jpeg.cpp \
 	../mjpeg-fallback.cpp \
-	../static-plugin.cpp \
 	$(NULL)
 
 test_mjpeg_fallback_LDADD = \

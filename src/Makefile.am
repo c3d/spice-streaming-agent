@@ -49,8 +49,6 @@ spice_streaming_agent_LDADD = \
 
 spice_streaming_agent_SOURCES = \
 	spice-streaming-agent.cpp \
-	static-plugin.cpp \
-	static-plugin.hpp \
 	concrete-agent.cpp \
 	concrete-agent.hpp \
 	mjpeg-fallback.cpp \

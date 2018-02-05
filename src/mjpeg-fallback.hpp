@@ -27,6 +27,7 @@ public:
     void ParseOptions(const ConfigureOption *options);
     MjpegSettings Options() const;  // TODO unify on Settings vs Options
     SpiceVideoCodecType VideoCodecType() const override;
+    static bool Register(Agent* agent);
 private:
     MjpegSettings settings = { 10, 80 };
 };

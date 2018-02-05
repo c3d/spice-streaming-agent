@@ -15,7 +15,6 @@
 #include <syslog.h>
 #include <X11/Xlib.h>
 
-#include "static-plugin.hpp"
 #include "jpeg.hpp"
 
 using namespace spice::streaming_agent;
@@ -187,8 +186,7 @@ SpiceVideoCodecType MjpegPlugin::VideoCodecType() const {
     return SPICE_VIDEO_CODEC_TYPE_MJPEG;
 }
 
-static bool
-mjpeg_plugin_init(Agent* agent)
+bool MjpegPlugin::Register(Agent* agent)
 {
     if (agent->Version() != PluginVersion)
         return false;
@@ -205,5 +203,3 @@ mjpeg_plugin_init(Agent* agent)
 
     return true;
 }
-
-static StaticPlugin mjpeg_plugin(mjpeg_plugin_init);

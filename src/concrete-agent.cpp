@@ -11,7 +11,6 @@
 #include <dlfcn.h>
 
 #include "concrete-agent.hpp"
-#include "static-plugin.hpp"
 
 using namespace spice::streaming_agent;
 
@@ -57,8 +56,6 @@ void ConcreteAgent::AddOption(const char *name, const char *value)
 
 void ConcreteAgent::LoadPlugins(const std::string &directory)
 {
-    StaticPlugin::InitAll(*this);
-
     std::string pattern = directory + "/*.so";
     glob_t globbuf;
 
