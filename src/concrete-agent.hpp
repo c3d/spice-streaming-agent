@@ -11,7 +11,8 @@
 #include <memory>
 #include <spice-streaming-agent/plugin.hpp>
 
-namespace SpiceStreamingAgent {
+namespace spice {
+namespace streaming_agent {
 
 struct ConcreteConfigureOption: ConfigureOption
 {
@@ -42,6 +43,6 @@ private:
     std::vector<ConcreteConfigureOption> options;
 };
 
-}
+}} // namespace spice::streaming_agent
 
 #endif // SPICE_STREAMING_AGENT_CONCRETE_AGENT_HPP

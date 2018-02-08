@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include "static-plugin.hpp"
 
-using namespace SpiceStreamingAgent;
+using namespace spice::streaming_agent;
 
 const StaticPlugin *StaticPlugin::list = nullptr;
 

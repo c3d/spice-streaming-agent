@@ -36,7 +36,7 @@
 #include "concrete-agent.hpp"
 
 using namespace std;
-using namespace SpiceStreamingAgent;
+using namespace spice::streaming_agent;
 
 static ConcreteAgent agent;
 

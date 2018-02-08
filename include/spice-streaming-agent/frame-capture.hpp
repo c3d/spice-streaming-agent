@@ -10,7 +10,8 @@
 
 #include <spice/enums.h>
 
-namespace SpiceStreamingAgent {
+namespace spice {
+namespace streaming_agent {
 
 struct FrameSize
 {
@@ -57,6 +58,6 @@ protected:
     void operator=(const FrameCapture&) = delete;
 };
 
-}
+}} // namespace spice::streaming_agent
 
 #endif // SPICE_STREAMING_AGENT_FRAME_CAPTURE_HPP

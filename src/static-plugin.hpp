@@ -8,7 +8,8 @@
 
 #include <spice-streaming-agent/plugin.hpp>
 
-namespace SpiceStreamingAgent {
+namespace spice {
+namespace streaming_agent {
 
 class StaticPlugin final {
 public:
@@ -30,6 +31,6 @@ private:
     static const StaticPlugin *list;
 };
 
-}
+}} // namespace spice::streaming_agent
 
 #endif // SPICE_STREAMING_AGENT_STATIC_PLUGIN_HPP

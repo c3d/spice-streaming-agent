@@ -17,7 +17,8 @@
  * Plugins and register them.
  */
 
-namespace SpiceStreamingAgent {
+namespace spice {
+namespace streaming_agent {
 
 class FrameCapture;
 
@@ -129,9 +130,9 @@ public:
     virtual const ConfigureOption* Options() const = 0;
 };
 
-typedef bool PluginInitFunc(SpiceStreamingAgent::Agent* agent);
+typedef bool PluginInitFunc(spice::streaming_agent::Agent* agent);
 
-}
+}} // namespace spice::streaming_agent
 
 #ifndef SPICE_STREAMING_AGENT_PROGRAM
 /*!
@@ -146,7 +147,7 @@ typedef bool PluginInitFunc(SpiceStreamingAgent::Agent* agent);
  * the plugin which could be a problem in some systems.
  * \return true if plugin should stay loaded, false otherwise
  */
-extern "C" SpiceStreamingAgent::PluginInitFunc spice_streaming_agent_plugin_init;
+extern "C" spice::streaming_agent::PluginInitFunc spice_streaming_agent_plugin_init;
 #endif
 
 #endif // SPICE_STREAMING_AGENT_PLUGIN_HPP

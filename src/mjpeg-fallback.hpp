@@ -10,7 +10,8 @@
 #include <spice-streaming-agent/frame-capture.hpp>
 
 
-namespace SpiceStreamingAgent {
+namespace spice {
+namespace streaming_agent {
 
 struct MjpegSettings
 {
@@ -29,6 +30,6 @@ private:
     MjpegSettings settings = { 10, 80 };
 };
 
-} // namespace SpiceStreamingAgent
+}} // namespace spice::streaming_agent
 
 #endif // SPICE_STREAMING_AGENT_MJPEG_FALLBACK_HPP

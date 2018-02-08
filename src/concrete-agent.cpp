@@ -14,7 +14,7 @@
 #include "static-plugin.hpp"
 
 using namespace std;
-using namespace SpiceStreamingAgent;
+using namespace spice::streaming_agent;
 
 static inline unsigned MajorVersion(unsigned version)
 {

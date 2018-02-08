@@ -19,7 +19,7 @@
 #include "jpeg.hpp"
 
 using namespace std;
-using namespace SpiceStreamingAgent;
+using namespace spice::streaming_agent;
 
 #define ERROR(args) do { \
     std::ostringstream _s; \
