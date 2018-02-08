@@ -18,7 +18,6 @@
 #include "static-plugin.hpp"
 #include "jpeg.hpp"
 
-using namespace std;
 using namespace spice::streaming_agent;
 
 #define ERROR(args) do { \
@@ -55,7 +54,7 @@ private:
     MjpegSettings settings;
     Display *dpy;
 
-    vector<uint8_t> frame;
+    std::vector<uint8_t> frame;
 
     // last frame sizes
     uint32_t last_width = ~0u, last_height = ~0u;

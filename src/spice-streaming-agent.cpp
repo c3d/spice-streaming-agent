@@ -35,7 +35,6 @@
 #include "hexdump.h"
 #include "concrete-agent.hpp"
 
-using namespace std;
 using namespace spice::streaming_agent;
 
 static ConcreteAgent agent;
@@ -351,7 +350,7 @@ static void cursor_changes(Display *display, int event_base)
 }
 
 static void
-do_capture(const string &streamport, FILE *f_log)
+do_capture(const std::string &streamport, FILE *f_log)
 {
     streamfd = open(streamport.c_str(), O_RDWR);
     if (streamfd < 0)
@@ -437,7 +436,7 @@ done:
 
 int main(int argc, char* argv[])
 {
-    string streamport = "/dev/virtio-ports/com.redhat.stream.0";
+    std::string streamport = "/dev/virtio-ports/com.redhat.stream.0";
     char opt;
     const char *log_filename = NULL;
     int logmask = LOG_UPTO(LOG_WARNING);

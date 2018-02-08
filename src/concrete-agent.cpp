@@ -13,7 +13,6 @@
 #include "concrete-agent.hpp"
 #include "static-plugin.hpp"
 
-using namespace std;
 using namespace spice::streaming_agent;
 
 static inline unsigned MajorVersion(unsigned version)
@@ -40,7 +39,7 @@ bool ConcreteAgent::PluginVersionIsCompatible(unsigned pluginVersion) const
 
 void ConcreteAgent::Register(Plugin& plugin)
 {
-    plugins.push_back(shared_ptr<Plugin>(&plugin));
+    plugins.push_back(std::shared_ptr<Plugin>(&plugin));
 }
 
 const ConfigureOption* ConcreteAgent::Options() const
@@ -56,11 +55,11 @@ void ConcreteAgent::AddOption(const char *name, const char *value)
     options.insert(--options.end(), ConcreteConfigureOption(name, value));
 }
 
-void ConcreteAgent::LoadPlugins(const string &directory)
+void ConcreteAgent::LoadPlugins(const std::string &directory)
 {
     StaticPlugin::InitAll(*this);
 
-    string pattern = directory + "/*.so";
+    std::string pattern = directory + "/*.so";
     glob_t globbuf;
 
     int glob_result = glob(pattern.c_str(), 0, NULL, &globbuf);
@@ -77,7 +76,7 @@ void ConcreteAgent::LoadPlugins(const string &directory)
     globfree(&globbuf);
 }
 
-void ConcreteAgent::LoadPlugin(const string &plugin_filename)
+void ConcreteAgent::LoadPlugin(const std::string &plugin_filename)
 {
     void *dl = dlopen(plugin_filename.c_str(), RTLD_LOCAL|RTLD_NOW);
     if (!dl) {
@@ -101,7 +100,7 @@ void ConcreteAgent::LoadPlugin(const string &plugin_filename)
 
 FrameCapture *ConcreteAgent::GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs)
 {
-    vector<pair<unsigned, shared_ptr<Plugin>>> sorted_plugins;
+    std::vector<std::pair<unsigned, std::shared_ptr<Plugin>>> sorted_plugins;
 
     // sort plugins base on ranking, reverse order
     for (const auto& plugin: plugins) {
