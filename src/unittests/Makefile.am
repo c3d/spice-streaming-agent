@@ -13,27 +13,27 @@ AM_CFLAGS = \
 	$(NULL)
 
 check_PROGRAMS = \
-	test-hexdump \
+	hexdump \
 	$(NULL)
 
 TESTS = \
-	hexdump.sh \
+	test-hexdump.sh \
 	$(NULL)
 
 noinst_PROGRAMS = \
 	$(check_PROGRAMS) \
 	$(NULL)
 
-test_hexdump_SOURCES = \
-	test-hexdump.c \
+hexdump_SOURCES = \
+	hexdump.c \
 	$(NULL)
 
-test_hexdump_LDADD = \
+hexdump_LDADD = \
 	../libstreaming-utils.a \
 	$(NULL)
 
 EXTRA_DIST = \
-	hexdump.sh \
+	test-hexdump.sh \
 	hexdump1.in \
 	hexdump1.out \
 	hexdump2.in \

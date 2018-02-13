@@ -12,7 +12,7 @@ for f in "$SRCDIR"/hexdump*.in; do
     reference=`echo $f | sed 's,\.in,.out,'`
     out=`basename $reference`.test
     rm -f $out
-    ./test-hexdump $out < $f
+    ./hexdump $out < $f
     cmp $out $reference
     rm -f $out
 done
