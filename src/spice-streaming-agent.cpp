@@ -55,54 +55,23 @@ static int streaming_requested;
 static std::set<SpiceVideoCodecType> client_codecs;
 static bool quit;
 static int streamfd = -1;
-static bool stdin_ok;
 static int log_binary = 0;
 static std::mutex stream_mtx;
 
-static int have_something_to_read(int *pfd, int timeout)
+static int have_something_to_read(int timeout)
 {
-    int nfds;
-    struct pollfd pollfds[2] = {
-        {streamfd, POLLIN, 0},
-        {0, POLLIN, 0}
-    };
-    *pfd = -1;
-    nfds = (stdin_ok ? 2 : 1);
-    if (poll(pollfds, nfds, timeout) < 0) {
+    struct pollfd pollfd = {streamfd, POLLIN, 0};
+
+    if (poll(&pollfd, 1, timeout) < 0) {
         syslog(LOG_ERR, "poll FAILED\n");
         return -1;
     }
-    if (pollfds[0].revents == POLLIN) {
-        *pfd = streamfd;
-    }
-    if (pollfds[1].revents == POLLIN) {
-        *pfd = 0;
-    }
-    return *pfd != -1;
-}
 
-static int read_command_from_stdin(void)
-{
-    char buffer[64], *p, *save = NULL;
-
-    p = fgets(buffer, sizeof(buffer), stdin);
-    if (p == NULL) {
-        syslog(LOG_ERR, "Failed to read from stdin\n");
-        return -1;
-    }
-    const char *cmd = strtok_r(buffer, " \t\n\r", &save);
-    if (!cmd)
+    if (pollfd.revents == POLLIN) {
         return 1;
-    if (strcmp(cmd, "quit") == 0) {
-        quit = true;
-    } else if (strcmp(cmd, "start") == 0) {
-        streaming_requested = 1;
-    } else if (strcmp(cmd, "stop") == 0) {
-        streaming_requested = 0;
-    } else {
-        syslog(LOG_WARNING, "unknown command %s\n", cmd);
     }
-    return 1;
+
+    return 0;
 }
 
 static int read_command_from_device(void)
@@ -152,24 +121,19 @@ static int read_command_from_device(void)
 
 static int read_command(bool blocking)
 {
-    int fd, n=1;
     int timeout = blocking?-1:0;
     while (!quit) {
-        if (!have_something_to_read(&fd, timeout)) {
+        if (!have_something_to_read(timeout)) {
             if (!blocking) {
                 return 0;
             }
             sleep(1);
             continue;
         }
-        if (fd) {
-            n = read_command_from_device();
-        } else {
-            n = read_command_from_stdin();
-        }
-        break;
+        return read_command_from_device();
     }
-    return n;
+
+    return 1;
 }
 
 static size_t
@@ -276,7 +240,6 @@ static void usage(const char *progname)
     printf("usage: %s <options>\n", progname);
     printf("options are:\n");
     printf("\t-p portname  -- virtio-serial port to use\n");
-    printf("\t-i accept commands from stdin\n");
     printf("\t-l file -- log frames to file\n");
     printf("\t--log-binary -- log binary frames (following -l)\n");
     printf("\t-d -- enable debug logs\n");
@@ -446,21 +409,15 @@ int main(int argc, char* argv[])
         { 0, 0, 0, 0}
     };
 
-    if (isatty(fileno(stderr)) && isatty(fileno(stdin))) {
-        stdin_ok = true;
-    }
+    openlog("spice-streaming-agent",
+            isatty(fileno(stderr)) ? (LOG_PERROR|LOG_PID) : LOG_PID, LOG_USER);
 
-    openlog("spice-streaming-agent", stdin_ok? (LOG_PERROR|LOG_PID) : LOG_PID, LOG_USER);
     setlogmask(logmask);
 
-    while ((opt = getopt_long(argc, argv, "hip:c:l:d", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hp:c:l:d", long_options, NULL)) != -1) {
         switch (opt) {
         case 0:
             /* Handle long options if needed */
-            break;
-        case 'i':
-            stdin_ok = true;
-            openlog("spice-streaming-agent", LOG_PERROR|LOG_PID, LOG_USER);
             break;
         case 'p':
             streamport = optarg;
