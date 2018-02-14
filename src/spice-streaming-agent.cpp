@@ -53,8 +53,8 @@ struct SpiceStreamDataMessage
 };
 
 static bool streaming_requested = false;
+static bool quit_requested = false;
 static std::set<SpiceVideoCodecType> client_codecs;
-static bool quit;
 static int streamfd = -1;
 static int log_binary = 0;
 static std::mutex stream_mtx;
@@ -123,7 +123,7 @@ static int read_command_from_device(void)
 static int read_command(bool blocking)
 {
     int timeout = blocking?-1:0;
-    while (!quit) {
+    while (!quit_requested) {
         if (!have_something_to_read(timeout)) {
             if (!blocking) {
                 return 0;
@@ -221,7 +221,7 @@ static uint64_t get_time(void)
 static void handle_interrupt(int intr)
 {
     syslog(LOG_INFO, "Got signal %d, exiting", intr);
-    quit = true;
+    quit_requested = true;
 }
 
 static void register_interrupts(void)
@@ -322,16 +322,17 @@ do_capture(const std::string &streamport, FILE *f_log)
                                  streamport + "): " + strerror(errno));
 
     unsigned int frame_count = 0;
-    while (! quit) {
-        while (!quit && !streaming_requested) {
+    while (!quit_requested) {
+        while (!quit_requested && !streaming_requested) {
             if (read_command(true) < 0) {
                 syslog(LOG_ERR, "FAILED to read command\n");
                 goto done;
             }
         }
 
-        if (quit)
+        if (quit_requested) {
             return;
+        }
 
         syslog(LOG_INFO, "streaming starts now\n");
         uint64_t time_last = 0;
@@ -340,7 +341,7 @@ do_capture(const std::string &streamport, FILE *f_log)
         if (!capture)
             throw std::runtime_error("cannot find a suitable capture system");
 
-        while (!quit && streaming_requested) {
+        while (!quit_requested && streaming_requested) {
             if (++frame_count % 100 == 0) {
                 syslog(LOG_DEBUG, "SENT %d frames\n", frame_count);
             }
