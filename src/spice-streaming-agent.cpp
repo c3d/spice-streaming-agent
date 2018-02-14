@@ -22,6 +22,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <string>
 #include <functional>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xfixes.h>
