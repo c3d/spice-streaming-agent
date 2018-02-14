@@ -26,7 +26,7 @@ public:
     unsigned Rank() override;
     void ParseOptions(const ConfigureOption *options);
     MjpegSettings Options() const;  // TODO unify on Settings vs Options
-    SpiceVideoCodecType VideoCodecType() const;
+    SpiceVideoCodecType VideoCodecType() const override;
 private:
     MjpegSettings settings = { 10, 80 };
 };

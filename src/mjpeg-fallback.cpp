@@ -47,7 +47,7 @@ public:
     ~MjpegFrameCapture();
     FrameInfo CaptureFrame() override;
     void Reset() override;
-    SpiceVideoCodecType VideoCodecType() const {
+    SpiceVideoCodecType VideoCodecType() const override {
         return SPICE_VIDEO_CODEC_TYPE_MJPEG;
     }
 private:
