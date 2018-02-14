@@ -143,10 +143,10 @@ write_all(int fd, const void *buf, const size_t len)
     size_t written = 0;
     while (written < len) {
         int l = write(fd, (const char *) buf + written, len - written);
-        if (l < 0 && errno == EINTR) {
-            continue;
-        }
         if (l < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
             syslog(LOG_ERR, "write failed - %m");
             return l;
         }
