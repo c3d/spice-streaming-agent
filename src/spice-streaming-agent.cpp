@@ -253,19 +253,24 @@ write_all(int fd, const void *buf, const size_t len)
     return written;
 }
 
-static int spice_stream_send_format(int streamfd, unsigned w, unsigned h, unsigned c)
+static int spice_stream_send_format(int streamfd, unsigned w, unsigned h, uint8_t c)
 {
-
-    SpiceStreamFormatMessage msg;
-    const size_t msgsize = sizeof(msg);
-    const size_t hdrsize  = sizeof(msg.hdr);
-    memset(&msg, 0, msgsize);
-    msg.hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
-    msg.hdr.type = STREAM_TYPE_FORMAT;
-    msg.hdr.size = msgsize - hdrsize; /* includes only the body? */
-    msg.msg.width = w;
-    msg.msg.height = h;
-    msg.msg.codec = c;
+    const size_t msgsize = sizeof(SpiceStreamFormatMessage);
+    const size_t hdrsize  = sizeof(StreamDevHeader);
+    SpiceStreamFormatMessage msg = {
+        .hdr = {
+            .protocol_version = STREAM_DEVICE_PROTOCOL,
+            .padding = 0,       // Workaround GCC "not implemented" bug
+            .type = STREAM_TYPE_FORMAT,
+            .size = msgsize - hdrsize
+        },
+        .msg = {
+            .width = w,
+            .height = h,
+            .codec = c,
+            .padding1 = { }
+        }
+    };
     syslog(LOG_DEBUG, "writing format\n");
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
     if (write_all(streamfd, &msg, msgsize) != msgsize) {
@@ -276,14 +281,18 @@ static int spice_stream_send_format(int streamfd, unsigned w, unsigned h, unsign
 
 static int spice_stream_send_frame(int streamfd, const void *buf, const unsigned size)
 {
-    SpiceStreamDataMessage msg;
-    const size_t msgsize = sizeof(msg);
     ssize_t n;
+    const size_t msgsize = sizeof(SpiceStreamFormatMessage);
+    SpiceStreamDataMessage msg = {
+        .hdr = {
+            .protocol_version = STREAM_DEVICE_PROTOCOL,
+            .padding = 0,       // Workaround GCC "not implemented" bug
+            .type = STREAM_TYPE_DATA,
+            .size = size  /* includes only the body? */
+        },
+        .msg = {}
+    };
 
-    memset(&msg, 0, msgsize);
-    msg.hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
-    msg.hdr.type = STREAM_TYPE_DATA;
-    msg.hdr.size = size; /* includes only the body? */
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
     n = write_all(streamfd, &msg, msgsize);
     syslog(LOG_DEBUG,
@@ -456,7 +465,7 @@ do_capture(int streamfd, const char *streamport, FILE *f_log)
 
             if (frame.stream_start) {
                 unsigned width, height;
-                unsigned char codec;
+                uint8_t codec;
 
                 width = frame.size.width;
                 height = frame.size.height;
