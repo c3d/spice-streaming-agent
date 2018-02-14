@@ -26,7 +26,7 @@ private:
     void *operator new[](size_t s);
 
     const StaticPlugin *const next;
-    const PluginInitFunc* const init_func;
+    PluginInitFunc* const init_func;
 
     static const StaticPlugin *list;
 };
