@@ -58,9 +58,9 @@ struct SpiceStreamDataMessage
 
 static bool streaming_requested = false;
 static bool quit_requested = false;
+static bool log_binary = false;
 static std::set<SpiceVideoCodecType> client_codecs;
 static int streamfd = -1;
-static int log_binary = 0;
 static std::mutex stream_mtx;
 
 static int have_something_to_read(int timeout)
@@ -451,11 +451,13 @@ int main(int argc, char* argv[])
     int logmask = LOG_UPTO(LOG_WARNING);
     const char *pluginsdir = PLUGINSDIR;
     enum {
-        OPT_PLUGINS_DIR = UCHAR_MAX+1
+        OPT_first = UCHAR_MAX,
+        OPT_PLUGINS_DIR,
+        OPT_LOG_BINARY,
     };
-    struct option long_options[] = {
+    static const struct option long_options[] = {
         { "plugins-dir", required_argument, NULL, OPT_PLUGINS_DIR},
-        { "log-binary", no_argument, &log_binary, 1},
+        { "log-binary", no_argument, NULL, OPT_LOG_BINARY},
         { "help", no_argument, NULL, 'h'},
         { 0, 0, 0, 0}
     };
@@ -486,6 +488,9 @@ int main(int argc, char* argv[])
             agent.AddOption(optarg, p);
             break;
         }
+        case OPT_LOG_BINARY:
+            log_binary = true;
+            break;
         case 'l':
             log_filename = optarg;
             break;
