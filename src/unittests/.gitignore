@@ -1,1 +1,4 @@
 /hexdump
+/test-hexdump.sh.log
+/test-hexdump.sh.trs
+/test-suite.log
