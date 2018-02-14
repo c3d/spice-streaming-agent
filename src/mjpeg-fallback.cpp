@@ -159,29 +159,24 @@ unsigned MjpegPlugin::Rank()
 
 void MjpegPlugin::ParseOptions(const ConfigureOption *options)
 {
-#define arg_error(...) syslog(LOG_ERR, ## __VA_ARGS__);
-
     for (; options->name; ++options) {
-        const char *name = options->name;
-        const char *value = options->value;
+        const std::string name = options->name;
+        const std::string value = options->value;
 
-        if (strcmp(name, "framerate") == 0) {
-            int val = atoi(value);
-            if (val > 0) {
-                settings.fps = val;
+        if (name == "framerate") {
+            try {
+                settings.fps = stoi(value);
+            } catch (const std::exception &e) {
+                throw std::runtime_error("Invalid value '" + value + "' for option 'framerate'.");
             }
-            else {
-                arg_error("wrong framerate arg %s\n", value);
+        } else if (name == "mjpeg.quality") {
+            try {
+                settings.quality = stoi(value);
+            } catch (const std::exception &e) {
+                throw std::runtime_error("Invalid value '" + value + "' for option 'mjpeg.quality'.");
             }
-        }
-        if (strcmp(name, "mjpeg.quality") == 0) {
-            int val = atoi(value);
-            if (val > 0) {
-                settings.quality = val;
-            }
-            else {
-                arg_error("wrong mjpeg.quality arg %s\n", value);
-            }
+        } else {
+            throw std::runtime_error("Invalid option '" + name + "'.");
         }
     }
 }
@@ -198,7 +193,11 @@ mjpeg_plugin_init(Agent* agent)
 
     std::unique_ptr<MjpegPlugin> plugin(new MjpegPlugin());
 
-    plugin->ParseOptions(agent->Options());
+    try {
+        plugin->ParseOptions(agent->Options());
+    } catch (const std::exception &e) {
+        syslog(LOG_ERR, "Error parsing plugin option: %s\n", e.what());
+    }
 
     agent->Register(*plugin.release());
 
