@@ -52,7 +52,7 @@ struct SpiceStreamDataMessage
     StreamMsgData msg;
 };
 
-static int streaming_requested;
+static bool streaming_requested = false;
 static std::set<SpiceVideoCodecType> client_codecs;
 static bool quit;
 static int streamfd = -1;
@@ -111,7 +111,7 @@ static int read_command_from_device(void)
                n, hdr.size);
         return -1;
     }
-    streaming_requested = msg[0]; /* num_codecs */
+    streaming_requested = msg[0] != 0; /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            streaming_requested ? "START" : "STOP");
     client_codecs.clear();
