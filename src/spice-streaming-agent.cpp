@@ -56,14 +56,39 @@ struct SpiceStreamDataMessage
     StreamMsgData msg;
 };
 
+struct SpiceStreamCursorMessage
+{
+    StreamDevHeader hdr;
+    StreamMsgCursorSet msg;
+};
+
+class Stream
+{
+public:
+    Stream(const char *name)
+    {
+        fd = open(name, O_RDWR);
+        if (fd < 0) {
+            throw std::runtime_error("failed to open streaming device");
+        }
+    }
+    ~Stream()
+    {
+        close(fd);
+    }
+    int file_descriptor() { return fd; }
+
+private:
+    int fd = -1;
+};
+
 static bool streaming_requested = false;
 static bool quit_requested = false;
 static bool log_binary = false;
 static std::set<SpiceVideoCodecType> client_codecs;
-static int streamfd = -1;
 static std::mutex stream_mtx;
 
-static int have_something_to_read(int timeout)
+static int have_something_to_read(int streamfd, int timeout)
 {
     struct pollfd pollfd = {streamfd, POLLIN, 0};
 
@@ -79,7 +104,7 @@ static int have_something_to_read(int timeout)
     return 0;
 }
 
-static void read_all(void *msg, size_t len)
+static void read_all(int streamfd, void *msg, size_t len)
 {
     while (len > 0) {
         ssize_t n = read(streamfd, msg, len);
@@ -97,7 +122,7 @@ static void read_all(void *msg, size_t len)
     }
 }
 
-static void handle_stream_start_stop(uint32_t len)
+static void handle_stream_start_stop(int streamfd, uint32_t len)
 {
     uint8_t msg[256];
 
@@ -106,7 +131,7 @@ static void handle_stream_start_stop(uint32_t len)
                                  "(longer than " + std::to_string(sizeof(msg)) + ")");
     }
 
-    read_all(msg, len);
+    read_all(streamfd, msg, len);
     streaming_requested = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            streaming_requested ? "START" : "STOP");
@@ -116,7 +141,7 @@ static void handle_stream_start_stop(uint32_t len)
     }
 }
 
-static void handle_stream_capabilities(uint32_t len)
+static void handle_stream_capabilities(int streamfd, uint32_t len)
 {
     uint8_t caps[STREAM_MSG_CAPABILITIES_MAX_BYTES];
 
@@ -124,7 +149,7 @@ static void handle_stream_capabilities(uint32_t len)
         throw std::runtime_error("capability message too long");
     }
 
-    read_all(caps, len);
+    read_all(streamfd, caps, len);
     // we currently do not support extensions so just reply so
     StreamDevHeader hdr = {
         STREAM_DEVICE_PROTOCOL,
@@ -137,7 +162,7 @@ static void handle_stream_capabilities(uint32_t len)
     }
 }
 
-static void handle_stream_error(size_t len)
+static void handle_stream_error(int streamfd, size_t len)
 {
     if (len < sizeof(StreamMsgNotifyError)) {
         throw std::runtime_error("Received NotifyError message size " + std::to_string(len) +
@@ -151,7 +176,7 @@ static void handle_stream_error(size_t len)
 
     size_t len_to_read = std::min(len, sizeof(msg) - 1);
 
-    read_all(&msg, len_to_read);
+    read_all(streamfd, &msg, len_to_read);
     msg.msg[len_to_read - sizeof(StreamMsgNotifyError)] = '\0';
 
     syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s\n",
@@ -163,7 +188,7 @@ static void handle_stream_error(size_t len)
     }
 }
 
-static void read_command_from_device(void)
+static void read_command_from_device(int streamfd)
 {
     StreamDevHeader hdr;
     int n;
@@ -181,27 +206,27 @@ static void read_command_from_device(void)
 
     switch (hdr.type) {
     case STREAM_TYPE_CAPABILITIES:
-        return handle_stream_capabilities(hdr.size);
+        return handle_stream_capabilities(streamfd, hdr.size);
     case STREAM_TYPE_NOTIFY_ERROR:
-        return handle_stream_error(hdr.size);
+        return handle_stream_error(streamfd, hdr.size);
     case STREAM_TYPE_START_STOP:
-        return handle_stream_start_stop(hdr.size);
+        return handle_stream_start_stop(streamfd, hdr.size);
     }
     throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
 }
 
-static int read_command(bool blocking)
+static int read_command(int streamfd, bool blocking)
 {
     int timeout = blocking?-1:0;
     while (!quit_requested) {
-        if (!have_something_to_read(timeout)) {
+        if (!have_something_to_read(streamfd, timeout)) {
             if (!blocking) {
                 return 0;
             }
             sleep(1);
             continue;
         }
-        read_command_from_device();
+        read_command_from_device(streamfd);
         break;
     }
 
@@ -227,7 +252,7 @@ write_all(int fd, const void *buf, const size_t len)
     return written;
 }
 
-static int spice_stream_send_format(unsigned w, unsigned h, unsigned c)
+static int spice_stream_send_format(int streamfd, unsigned w, unsigned h, unsigned c)
 {
 
     SpiceStreamFormatMessage msg;
@@ -248,7 +273,7 @@ static int spice_stream_send_format(unsigned w, unsigned h, unsigned c)
     return EXIT_SUCCESS;
 }
 
-static int spice_stream_send_frame(const void *buf, const unsigned size)
+static int spice_stream_send_frame(int streamfd, const void *buf, const unsigned size)
 {
     SpiceStreamDataMessage msg;
     const size_t msgsize = sizeof(msg);
@@ -323,7 +348,7 @@ static void usage(const char *progname)
 }
 
 static void
-send_cursor(unsigned width, unsigned height, int hotspot_x, int hotspot_y,
+send_cursor(int streamfd, unsigned width, unsigned height, int hotspot_x, int hotspot_y,
             std::function<void(uint32_t *)> fill_cursor)
 {
     if (width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH || height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
@@ -357,7 +382,7 @@ send_cursor(unsigned width, unsigned height, int hotspot_x, int hotspot_y,
     write_all(streamfd, msg.get(), cursor_size);
 }
 
-static void cursor_changes(Display *display, int event_base)
+static void cursor_changes(int streamfd, Display *display, int event_base)
 {
     unsigned long last_serial = 0;
 
@@ -382,26 +407,20 @@ static void cursor_changes(Display *display, int event_base)
             for (unsigned i = 0; i < cursor->width * cursor->height; ++i)
                 pixels[i] = cursor->pixels[i];
         };
-        send_cursor(cursor->width, cursor->height, cursor->xhot, cursor->yhot, fill_cursor);
+        send_cursor(streamfd,
+                    cursor->width, cursor->height, cursor->xhot, cursor->yhot, fill_cursor);
     }
 }
 
 static void
-do_capture(const char *streamport, FILE *f_log)
+do_capture(int streamfd, const char *streamport, FILE *f_log)
 {
-    streamfd = open(streamport, O_RDWR);
-    if (streamfd < 0) {
-        throw std::runtime_error("failed to open the streaming device (" +
-                                 std::string(streamport) + "): "
-                                 + strerror(errno));
-    }
-
     unsigned int frame_count = 0;
     while (!quit_requested) {
         while (!quit_requested && !streaming_requested) {
-            if (read_command(true) < 0) {
+            if (read_command(streamfd, true) < 0) {
                 syslog(LOG_ERR, "FAILED to read command\n");
-                goto done;
+                return;
             }
         }
 
@@ -444,7 +463,7 @@ do_capture(const char *streamport, FILE *f_log)
 
                 syslog(LOG_DEBUG, "wXh %uX%u  codec=%u\n", width, height, codec);
 
-                if (spice_stream_send_format(width, height, codec) == EXIT_FAILURE) {
+                if (spice_stream_send_format(streamfd, width, height, codec) == EXIT_FAILURE) {
                     throw std::runtime_error("FAILED to send format message");
                 }
             }
@@ -457,22 +476,17 @@ do_capture(const char *streamport, FILE *f_log)
                     hexdump(frame.buffer, frame.buffer_size, f_log);
                 }
             }
-            if (spice_stream_send_frame(frame.buffer, frame.buffer_size) == EXIT_FAILURE) {
+            if (spice_stream_send_frame(streamfd,
+                                        frame.buffer, frame.buffer_size) == EXIT_FAILURE) {
                 syslog(LOG_ERR, "FAILED to send a frame\n");
                 break;
             }
             //usleep(1);
-            if (read_command(false) < 0) {
+            if (read_command(streamfd, false) < 0) {
                 syslog(LOG_ERR, "FAILED to read command\n");
-                goto done;
+                return;
             }
         }
-    }
-
-done:
-    if (streamfd >= 0) {
-        close(streamfd);
-        streamfd = -1;
     }
 }
 
@@ -569,12 +583,13 @@ int main(int argc, char* argv[])
     Window rootwindow = DefaultRootWindow(display);
     XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
 
-    std::thread cursor_th(cursor_changes, display, event_base);
+    Stream stream(streamport);
+    std::thread cursor_th(cursor_changes, stream.file_descriptor(), display, event_base);
     cursor_th.detach();
 
     int ret = EXIT_SUCCESS;
     try {
-        do_capture(streamport, f_log);
+        do_capture(stream.file_descriptor(), streamport, f_log);
     }
     catch (std::runtime_error &err) {
         syslog(LOG_ERR, "%s\n", err.what());
