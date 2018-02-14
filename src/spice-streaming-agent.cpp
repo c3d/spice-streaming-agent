@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <getopt.h>
 #include <unistd.h>
@@ -351,7 +352,8 @@ do_capture(const std::string &streamport, FILE *f_log)
 
             uint64_t time_after = get_time();
             syslog(LOG_DEBUG,
-                   "got a frame -- size is %zu (%lu ms) (%lu ms from last frame)(%lu us)\n",
+                   "got a frame -- size is %zu (%" PRIu64 " ms) "
+                   "(%" PRIu64 " ms from last frame)(%" PRIu64 " us)\n",
                    frame.buffer_size, (time_after - time_before)/1000,
                    (time_after - time_last)/1000,
                    (time_before - time_last));
@@ -374,7 +376,8 @@ do_capture(const std::string &streamport, FILE *f_log)
                 if (log_binary) {
                     fwrite(frame.buffer, frame.buffer_size, 1, f_log);
                 } else {
-                    fprintf(f_log, "%lu: Frame of %zu bytes:\n", get_time(), frame.buffer_size);
+                    fprintf(f_log, "%" PRIu64 ": Frame of %zu bytes:\n",
+                            get_time(), frame.buffer_size);
                     hexdump(frame.buffer, frame.buffer_size, f_log);
                 }
             }
