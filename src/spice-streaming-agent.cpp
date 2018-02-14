@@ -264,7 +264,7 @@ write_all(int fd, const void *buf, const size_t len)
 static int spice_stream_send_format(int streamfd, unsigned w, unsigned h, uint8_t c)
 {
     const size_t msgsize = sizeof(FormatMessage);
-    const size_t hdrsize  = sizeof(StreamDevHeader);
+    const size_t hdrsize = sizeof(StreamDevHeader);
     FormatMessage msg = {
         .hdr = {
             .protocol_version = STREAM_DEVICE_PROTOCOL,
@@ -366,36 +366,44 @@ static void usage(const char *progname)
 }
 
 static void
-send_cursor(int streamfd, unsigned width, unsigned height, int hotspot_x, int hotspot_y,
+send_cursor(int streamfd,
+            uint16_t width, uint16_t height,
+            uint16_t hotspot_x, uint16_t hotspot_y,
             std::function<void(uint32_t *)> fill_cursor)
 {
     if (width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH || height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
         return;
     }
 
-    size_t cursor_size = sizeof(CursorMessage) + width * height * sizeof(uint32_t);
-    std::unique_ptr<uint8_t[]> msg(new uint8_t[cursor_size]);
+    const uint32_t msgsize = sizeof(CursorMessage) + width * height * sizeof(uint32_t);
+    const uint32_t hdrsize = sizeof(StreamDevHeader);
 
-    StreamDevHeader &dev_hdr(*reinterpret_cast<StreamDevHeader*>(msg.get()));
-    memset(&dev_hdr, 0, sizeof(dev_hdr));
-    dev_hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
-    dev_hdr.type = STREAM_TYPE_CURSOR_SET;
-    dev_hdr.size = cursor_size - sizeof(StreamDevHeader);
+    std::unique_ptr<uint8_t[]> storage(new uint8_t[msgsize]);
 
-    StreamMsgCursorSet &cursor_msg(*reinterpret_cast<StreamMsgCursorSet *>(msg.get() + sizeof(StreamDevHeader)));
-    memset(&cursor_msg, 0, sizeof(cursor_msg));
+    CursorMessage *cursor_msg =
+        new(storage.get()) CursorMessage {
+        .hdr = {
+            .protocol_version = STREAM_DEVICE_PROTOCOL,
+            .padding = 0,       // Workaround GCC internal / not implemented compiler error
+            .type = STREAM_TYPE_CURSOR_SET,
+            .size = msgsize - hdrsize
+        },
+        .msg = {
+            .width = width,
+            .height = height,
+            .hot_spot_x = hotspot_x,
+            .hot_spot_y = hotspot_y,
+            .type = SPICE_CURSOR_TYPE_ALPHA,
+            .padding1 = { },
+            .data = { }
+        }
+    };
 
-    cursor_msg.type = SPICE_CURSOR_TYPE_ALPHA;
-    cursor_msg.width = width;
-    cursor_msg.height = height;
-    cursor_msg.hot_spot_x = hotspot_x;
-    cursor_msg.hot_spot_y = hotspot_y;
-
-    uint32_t *pixels = reinterpret_cast<uint32_t *>(cursor_msg.data);
+    uint32_t *pixels = reinterpret_cast<uint32_t *>(cursor_msg->msg.data);
     fill_cursor(pixels);
 
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
-    write_all(streamfd, msg.get(), cursor_size);
+    write_all(streamfd, storage.get(), msgsize);
 }
 
 static void cursor_changes(int streamfd, Display *display, int event_base)
