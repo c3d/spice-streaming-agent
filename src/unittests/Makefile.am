@@ -2,6 +2,7 @@ NULL =
 
 AM_CPPFLAGS = \
 	-DRH_TOP_SRCDIR=\"$(abs_top_srcdir)\" \
+	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/src \
 	-I$(top_srcdir)/src/unittests \
 	$(SPICE_PROTOCOL_CFLAGS) \
@@ -14,10 +15,12 @@ AM_CFLAGS = \
 
 check_PROGRAMS = \
 	hexdump \
+	test-mjpeg-fallback \
 	$(NULL)
 
 TESTS = \
 	test-hexdump.sh \
+	test-mjpeg-fallback \
 	$(NULL)
 
 noinst_PROGRAMS = \
@@ -30,6 +33,18 @@ hexdump_SOURCES = \
 
 hexdump_LDADD = \
 	../libstreaming-utils.a \
+	$(NULL)
+
+test_mjpeg_fallback_SOURCES = \
+	test-mjpeg-fallback.cpp \
+	../jpeg.cpp \
+	../mjpeg-fallback.cpp \
+	../static-plugin.cpp \
+	$(NULL)
+
+test_mjpeg_fallback_LDADD = \
+	$(X11_LIBS) \
+	$(JPEG_LIBS) \
 	$(NULL)
 
 EXTRA_DIST = \

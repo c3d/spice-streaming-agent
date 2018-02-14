@@ -1,4 +1,5 @@
 /hexdump
-/test-hexdump.sh.log
-/test-hexdump.sh.trs
+/test-*.log
+/test-*.trs
+/test-mjpeg-fallback
 /test-suite.log

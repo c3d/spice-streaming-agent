@@ -181,6 +181,11 @@ void MjpegPlugin::ParseOptions(const ConfigureOption *options)
     }
 }
 
+MjpegSettings MjpegPlugin::Options() const
+{
+    return settings;
+}
+
 SpiceVideoCodecType MjpegPlugin::VideoCodecType() const {
     return SPICE_VIDEO_CODEC_TYPE_MJPEG;
 }

@@ -17,6 +17,7 @@ if test x"$ac_cv_prog_cc_c99" = xno; then
     AC_MSG_ERROR([C99 compiler is required.])
 fi
 AC_PROG_CXX
+AC_LANG(C++)
 AX_CXX_COMPILE_STDCXX_11
 AC_PROG_INSTALL
 AC_CANONICAL_HOST
@@ -48,6 +49,8 @@ AC_CHECK_LIB(jpeg, jpeg_destroy_decompress,
     AC_MSG_ERROR([jpeglib.h not found])),
     AC_MSG_ERROR([libjpeg not found]))
 AC_SUBST(JPEG_LIBS)
+
+AC_CHECK_HEADER([catch/catch.hpp],,[AC_MSG_ERROR([Could not find Catch dependency header (catch/catch.hpp)])])
 
 dnl ===========================================================================
 dnl check compiler flags
