@@ -305,7 +305,7 @@ static void cursor_changes(Display *display, int event_base)
             continue;
 
         last_serial = cursor->cursor_serial;
-        auto fill_cursor = [&](uint32_t *pixels) {
+        auto fill_cursor = [cursor](uint32_t *pixels) {
             for (unsigned i = 0; i < cursor->width * cursor->height; ++i)
                 pixels[i] = cursor->pixels[i];
         };
