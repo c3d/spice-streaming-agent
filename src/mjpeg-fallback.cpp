@@ -129,7 +129,7 @@ FrameInfo MjpegFrameCapture::CaptureFrame()
 
     int format = ZPixmap;
     // TODO handle errors
-    XImage *image = XGetImage(dpy, win, win_info.x, win_info.y, 
+    XImage *image = XGetImage(dpy, win, win_info.x, win_info.y,
                               win_info.width, win_info.height, AllPlanes, format);
 
     // TODO handle errors
