@@ -44,19 +44,24 @@ static size_t write_all(int fd, const void *buf, const size_t len);
 
 static ConcreteAgent agent;
 
-struct SpiceStreamFormatMessage
+namespace spice
+{
+namespace streaming_agent
+{
+
+struct FormatMessage
 {
     StreamDevHeader hdr;
     StreamMsgFormat msg;
 };
 
-struct SpiceStreamDataMessage
+struct DataMessage
 {
     StreamDevHeader hdr;
     StreamMsgData msg;
 };
 
-struct SpiceStreamCursorMessage
+struct CursorMessage
 {
     StreamDevHeader hdr;
     StreamMsgCursorSet msg;
@@ -81,6 +86,9 @@ public:
 private:
     int fd = -1;
 };
+
+}} // namespace spice::streaming_agent
+
 
 static bool streaming_requested = false;
 static bool quit_requested = false;
@@ -223,9 +231,9 @@ write_all(int fd, const void *buf, const size_t len)
 
 static int spice_stream_send_format(int streamfd, unsigned w, unsigned h, uint8_t c)
 {
-    const size_t msgsize = sizeof(SpiceStreamFormatMessage);
+    const size_t msgsize = sizeof(FormatMessage);
     const size_t hdrsize  = sizeof(StreamDevHeader);
-    SpiceStreamFormatMessage msg = {
+    FormatMessage msg = {
         .hdr = {
             .protocol_version = STREAM_DEVICE_PROTOCOL,
             .padding = 0,       // Workaround GCC "not implemented" bug
@@ -250,8 +258,8 @@ static int spice_stream_send_format(int streamfd, unsigned w, unsigned h, uint8_
 static int spice_stream_send_frame(int streamfd, const void *buf, const unsigned size)
 {
     ssize_t n;
-    const size_t msgsize = sizeof(SpiceStreamFormatMessage);
-    SpiceStreamDataMessage msg = {
+    const size_t msgsize = sizeof(FormatMessage);
+    DataMessage msg = {
         .hdr = {
             .protocol_version = STREAM_DEVICE_PROTOCOL,
             .padding = 0,       // Workaround GCC "not implemented" bug
@@ -336,13 +344,13 @@ send_cursor(int streamfd,
     }
 
     const uint32_t cursor_msgsize =
-        sizeof(SpiceStreamCursorMessage) + width * height * sizeof(uint32_t);
+        sizeof(CursorMessage) + width * height * sizeof(uint32_t);
     const uint32_t hdrsize  = sizeof(StreamDevHeader);
 
     std::unique_ptr<uint8_t[]> storage(new uint8_t[cursor_msgsize]);
 
-    SpiceStreamCursorMessage *cursor_msg =
-        new(storage.get()) SpiceStreamCursorMessage {
+    CursorMessage *cursor_msg =
+        new(storage.get()) CursorMessage {
         .hdr = {
             .protocol_version = STREAM_DEVICE_PROTOCOL,
             .padding = 0,       // Workaround GCC internal / not implemented compiler error
