@@ -87,6 +87,7 @@ AC_DEFUN([SPICE_COMPILE_WARNINGS],[
     dontwarn="$dontwarn -Wpointer-to-int-cast"
     dontwarn="$dontwarn -Wstrict-prototypes"
     dontwarn="$dontwarn -Wmissing-field-initializers"
+    dontwarn="$dontwarn -Wsuggest-final-types"
 
     # We want to enable these, but need to sort out the
     # decl mess with  gtk/generated_*.c
