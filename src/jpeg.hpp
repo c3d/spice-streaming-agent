@@ -3,8 +3,8 @@
  * \copyright
  * Copyright 2017 Red Hat Inc. All rights reserved.
  */
-#ifndef RH_STREAMING_AGENT_JPEG_HPP_
-#define RH_STREAMING_AGENT_JPEG_HPP_
+#ifndef SPICE_STREAMING_AGENT_JPEG_HPP
+#define SPICE_STREAMING_AGENT_JPEG_HPP
 
 #include <stdio.h>
 #include <vector>

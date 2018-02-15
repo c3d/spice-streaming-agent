@@ -3,8 +3,8 @@
  * \copyright
  * Copyright 2016-2017 Red Hat Inc. All rights reserved.
  */
-#ifndef RH_STREAMING_AGENT_HEXDUMP_H_
-#define RH_STREAMING_AGENT_HEXDUMP_H_
+#ifndef SPICE_STREAMING_AGENT_HEXDUMP_H
+#define SPICE_STREAMING_AGENT_HEXDUMP_H
 
 #ifdef __cplusplus
 extern "C" {
