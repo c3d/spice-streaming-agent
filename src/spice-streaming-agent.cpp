@@ -4,6 +4,16 @@
  * Copyright 2016-2017 Red Hat Inc. All rights reserved.
  */
 
+#include "concrete-agent.hpp"
+#include "hexdump.h"
+#include "mjpeg-fallback.hpp"
+
+#include <spice/stream-device.h>
+#include <spice/enums.h>
+
+#include <spice-streaming-agent/frame-capture.hpp>
+#include <spice-streaming-agent/plugin.hpp>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -27,16 +37,6 @@
 #include <functional>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xfixes.h>
-
-#include <spice/stream-device.h>
-#include <spice/enums.h>
-
-#include <spice-streaming-agent/frame-capture.hpp>
-#include <spice-streaming-agent/plugin.hpp>
-
-#include "hexdump.h"
-#include "concrete-agent.hpp"
-#include "mjpeg-fallback.hpp"
 
 using namespace spice::streaming_agent;
 
