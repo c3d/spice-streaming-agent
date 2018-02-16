@@ -354,12 +354,13 @@ static void cursor_changes(Display *display, int event_base)
 }
 
 static void
-do_capture(const std::string &streamport, FILE *f_log)
+do_capture(const char *streamport, FILE *f_log)
 {
-    streamfd = open(streamport.c_str(), O_RDWR);
+    streamfd = open(streamport, O_RDWR);
     if (streamfd < 0)
         throw std::runtime_error("failed to open the streaming device (" +
-                                 streamport + "): " + strerror(errno));
+                                 std::string(streamport) + "): "
+                                 + strerror(errno));
 
     unsigned int frame_count = 0;
     while (!quit_requested) {
@@ -443,7 +444,7 @@ done:
 
 int main(int argc, char* argv[])
 {
-    std::string streamport = "/dev/virtio-ports/com.redhat.stream.0";
+    const char *streamport = "/dev/virtio-ports/com.redhat.stream.0";
     char opt;
     const char *log_filename = NULL;
     int logmask = LOG_UPTO(LOG_WARNING);
