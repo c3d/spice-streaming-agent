@@ -88,7 +88,7 @@ static void handle_stream_start_stop(uint32_t len)
                                  "(longer than " + std::to_string(sizeof(msg)) + ")");
     }
     int n = read(streamfd, &msg, len);
-    if (n != len) {
+    if (n != (int) len) {
         throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
                                  " expected " + std::to_string(len));
     }
@@ -109,7 +109,7 @@ static void handle_stream_capabilities(uint32_t len)
         throw std::runtime_error("capability message too long");
     }
     int n = read(streamfd, caps, len);
-    if (n != len) {
+    if (n != (int) len) {
         throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
                                  " expected " + std::to_string(len));
     }
