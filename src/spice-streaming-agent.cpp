@@ -206,6 +206,80 @@ private:
     }
 };
 
+class X11CursorUpdater
+{
+public:
+    X11CursorUpdater(Stream &stream);
+    ~X11CursorUpdater();
+    void send_cursor_changes();
+
+private:
+    Stream &stream;
+    Display *display;
+};
+
+class X11CursorThread
+{
+public:
+    X11CursorThread(Stream &stream);
+    static void record_cursor_changes(X11CursorThread *self) { self->updater.send_cursor_changes(); }
+
+private:
+    X11CursorUpdater updater;
+    std::thread thread;
+};
+
+X11CursorUpdater::X11CursorUpdater(Stream &stream)
+    : stream(stream),
+      display(XOpenDisplay(NULL))
+{
+    if (display == NULL) {
+        throw Error("failed to open display").syslog();
+    }
+}
+
+X11CursorUpdater::~X11CursorUpdater()
+{
+    XCloseDisplay(display);
+}
+
+void X11CursorUpdater::send_cursor_changes()
+{
+    unsigned long last_serial = 0;
+
+    int event_base, error_base;
+    if (!XFixesQueryExtension(display, &event_base, &error_base)) {
+        syslog(LOG_WARNING, "XFixesQueryExtension failed, not sending cursor changes\n");
+        return; // also terminates the X11CursorThread if that's how we were launched
+    }
+    Window rootwindow = DefaultRootWindow(display);
+    XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
+
+    while (true) {
+        XEvent event;
+        XNextEvent(display, &event);
+        if (event.type != event_base + 1) {
+            continue;
+        }
+
+        XFixesCursorImage *cursor = XFixesGetCursorImage(display);
+        if (!cursor || cursor->cursor_serial == last_serial) {
+            continue;
+        }
+
+        last_serial = cursor->cursor_serial;
+        stream.send<X11CursorMessage>(cursor);
+    }
+}
+
+X11CursorThread::X11CursorThread(Stream &stream)
+    : updater(stream),
+      thread(record_cursor_changes, this)
+{
+    thread.detach();
+}
+
+
 }} // namespace spice::streaming_agent
 
 static bool quit_requested = false;
@@ -377,31 +451,6 @@ static void usage(const char *progname)
     exit(1);
 }
 
-static void cursor_changes(Stream *stream, Display *display, int event_base)
-{
-    unsigned long last_serial = 0;
-
-    while (1) {
-        XEvent event;
-        XNextEvent(display, &event);
-        if (event.type != event_base + 1) {
-            continue;
-        }
-
-        XFixesCursorImage *cursor = XFixesGetCursorImage(display);
-        if (!cursor) {
-            continue;
-        }
-
-        if (cursor->cursor_serial == last_serial) {
-            continue;
-        }
-
-        last_serial = cursor->cursor_serial;
-        stream->send<X11CursorMessage>(cursor);
-    }
-}
-
 static void
 do_capture(Stream &stream, const char *streamport, FILE *f_log)
 {
@@ -554,25 +603,10 @@ int main(int argc, char* argv[])
         }
     }
 
-    Display *display = XOpenDisplay(NULL);
-    if (display == NULL) {
-        syslog(LOG_ERR, "failed to open display\n");
-        return EXIT_FAILURE;
-    }
-    int event_base, error_base;
-    if (!XFixesQueryExtension(display, &event_base, &error_base)) {
-        syslog(LOG_ERR, "XFixesQueryExtension failed\n");
-        return EXIT_FAILURE;
-    }
-    Window rootwindow = DefaultRootWindow(display);
-    XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
-
-    Stream stream(streamport);
-    std::thread cursor_th(cursor_changes, &stream, display, event_base);
-    cursor_th.detach();
-
     int ret = EXIT_SUCCESS;
     try {
+        Stream stream(streamport);
+        X11CursorThread cursor_thread(stream);
         do_capture(stream, streamport, f_log);
     }
     catch (Error &err) {
