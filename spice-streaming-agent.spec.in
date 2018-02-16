@@ -33,6 +33,9 @@ agent plugins.
 %configure
 make %{?_smp_mflags} V=1
 
+%check
+make check
+
 %install
 make install DESTDIR=%{buildroot} V=1
 if test -d "%{buildroot}/%{_libdir}/%{name}/plugins"; then
