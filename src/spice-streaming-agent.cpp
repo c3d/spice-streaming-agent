@@ -65,6 +65,8 @@ struct CursorMessage
 
 class Stream
 {
+    typedef std::set<SpiceVideoCodecType> CodecSet;;
+
 public:
     Stream(const char *name)
     {
@@ -77,6 +79,8 @@ public:
     {
         close(streamfd);
     }
+
+    const CodecSet &client_codecs() const { return codecs; }
 
     int read_command(bool blocking);
     size_t write_all(const void *buf, const size_t len);
@@ -96,6 +100,7 @@ private:
 
 private:
     std::mutex mutex;
+    CodecSet codecs;
     int streamfd = -1;
 };
 
@@ -104,7 +109,6 @@ private:
 static bool streaming_requested = false;
 static bool quit_requested = false;
 static bool log_binary = false;
-static std::set<SpiceVideoCodecType> client_codecs;
 
 int Stream::have_something_to_read(int timeout)
 {
@@ -153,9 +157,9 @@ void Stream::handle_stream_start_stop(size_t len)
     streaming_requested = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            streaming_requested ? "START" : "STOP");
-    client_codecs.clear();
+    codecs.clear();
     for (int i = 1; i <= msg[0]; ++i) {
-        client_codecs.insert((SpiceVideoCodecType) msg[i]);
+        codecs.insert((SpiceVideoCodecType) msg[i]);
     }
 }
 
@@ -462,7 +466,7 @@ do_capture(Stream &stream, const char *streamport, FILE *f_log)
         syslog(LOG_INFO, "streaming starts now\n");
         uint64_t time_last = 0;
 
-        std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture(client_codecs));
+        std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture(stream.client_codecs()));
         if (!capture) {
             throw std::runtime_error("cannot find a suitable capture system");
         }
