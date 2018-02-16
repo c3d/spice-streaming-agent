@@ -77,7 +77,7 @@ static int have_something_to_read(int timeout)
     return 0;
 }
 
-static int read_command_from_device(void)
+static void read_command_from_device(void)
 {
     StreamDevHeader hdr;
     uint8_t msg[64];
@@ -86,40 +86,32 @@ static int read_command_from_device(void)
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
     n = read(streamfd, &hdr, sizeof(hdr));
     if (n != sizeof(hdr)) {
-        syslog(LOG_WARNING,
-               "read command from device FAILED -- read %d expected %lu\n",
-               n, sizeof(hdr));
-        return -1;
+        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
+                                 " expected " + std::to_string(sizeof(hdr)));
     }
     if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
-        syslog(LOG_WARNING, "BAD VERSION %d (expected is %d)\n", hdr.protocol_version,
-               STREAM_DEVICE_PROTOCOL);
-        return -1;
+        throw std::runtime_error("BAD VERSION " + std::to_string(hdr.protocol_version) +
+                                 " (expected is " + std::to_string(STREAM_DEVICE_PROTOCOL) + ")");
     }
     if (hdr.type != STREAM_TYPE_START_STOP) {
-        syslog(LOG_WARNING, "UNKNOWN msg of type %d\n", hdr.type);
-        return -1;
+        throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
     }
     if (hdr.size >= sizeof(msg)) {
-        syslog(LOG_WARNING,
-               "msg size (%d) is too long (longer than %lu)\n",
-               hdr.size, sizeof(msg));
-        return -1;
+        throw std::runtime_error("msg size (" + std::to_string(hdr.size) + ") is too long "
+                                 "(longer than " + std::to_string(sizeof(msg)) + ")");
     }
     n = read(streamfd, &msg, hdr.size);
     if (n != hdr.size) {
-        syslog(LOG_WARNING,
-               "read command from device FAILED -- read %d expected %d\n",
-               n, hdr.size);
-        return -1;
+        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
+                                 " expected " + std::to_string(hdr.size));
     }
     streaming_requested = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            streaming_requested ? "START" : "STOP");
     client_codecs.clear();
-    for (int i = 1; i <= msg[0]; ++i)
+    for (int i = 1; i <= msg[0]; ++i) {
         client_codecs.insert((SpiceVideoCodecType) msg[i]);
-    return 1;
+    }
 }
 
 static int read_command(bool blocking)
@@ -133,7 +125,8 @@ static int read_command(bool blocking)
             sleep(1);
             continue;
         }
-        return read_command_from_device();
+        read_command_from_device();
+        break;
     }
 
     return 1;
