@@ -47,6 +47,12 @@ int IOError::append_strerror(char *buffer, size_t size, int written) const noexc
     return written;
 }
 
+int OpenError::format_message(char *buffer, size_t size) const noexcept
+{
+    int written = snprintf(buffer, size, "%s '%s'", what(), filename);
+    return append_strerror(buffer, size, written);
+}
+
 int WriteError::format_message(char *buffer, size_t size) const noexcept
 {
     int written = snprintf(buffer, size, "%s writing %s", what(), operation);
