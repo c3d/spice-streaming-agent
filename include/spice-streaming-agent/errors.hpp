@@ -62,6 +62,20 @@ protected:
     int saved_errno;
 };
 
+/*! Error happening while opening a file */
+class OpenError : public IOError
+{
+public:
+    /*! Create an error taking the base message, the file and the system's errno value */
+    OpenError(const char *msg, std::string filename, int saved_errno)
+        : IOError(msg, saved_errno), filename(filename) {}
+
+    /*! The base message followed by the file name */
+    int format_message(char *buffer, size_t size) const noexcept override;
+protected:
+    std::string filename;
+};
+
 /*! Errors that happens while writing a message */
 class WriteError : public IOError
 {
