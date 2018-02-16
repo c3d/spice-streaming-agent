@@ -106,6 +106,7 @@ static void handle_stream_start_stop(uint32_t len)
                                  "(longer than " + std::to_string(sizeof(msg)) + ")");
     }
 
+
     read_all(msg, len);
     streaming_requested = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
