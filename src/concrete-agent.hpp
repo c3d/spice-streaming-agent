@@ -14,6 +14,9 @@
 namespace spice {
 namespace streaming_agent {
 
+class Stream;
+class FrameLog;
+
 struct ConcreteConfigureOption: ConfigureOption
 {
     ConcreteConfigureOption(const char *name, const char *value)
@@ -33,6 +36,7 @@ public:
     void Register(Plugin& plugin) override;
     const ConfigureOption* Options() const override;
     void LoadPlugins(const std::string &directory);
+    void CaptureLoop(Stream &stream, FrameLog &frame_log);
     // pointer must remain valid
     void AddOption(const char *name, const char *value);
     FrameCapture *GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs);
