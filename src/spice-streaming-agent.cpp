@@ -41,8 +41,6 @@
 
 using namespace spice::streaming_agent;
 
-static ConcreteAgent agent;
-
 namespace spice
 {
 namespace streaming_agent
@@ -489,8 +487,8 @@ static void usage(const char *progname)
     exit(1);
 }
 
-static void
-do_capture(Stream &stream, const char *streamport, FrameLog &frame_log)
+
+void ConcreteAgent::CaptureLoop(Stream &stream, FrameLog &frame_log)
 {
     unsigned int frame_count = 0;
     while (!quit_requested) {
@@ -508,7 +506,7 @@ do_capture(Stream &stream, const char *streamport, FrameLog &frame_log)
         syslog(LOG_INFO, "streaming starts now\n");
         uint64_t time_last = 0;
 
-        std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture(stream.client_codecs()));
+        std::unique_ptr<FrameCapture> capture(GetBestFrameCapture(stream.client_codecs()));
         if (!capture) {
             throw std::runtime_error("cannot find a suitable capture system");
         }
@@ -582,6 +580,7 @@ int main(int argc, char* argv[])
 
     setlogmask(logmask);
 
+    ConcreteAgent agent;
     while ((opt = getopt_long(argc, argv, "bhp:c:l:d", long_options, NULL)) != -1) {
         switch (opt) {
         case 0:
@@ -619,19 +618,17 @@ int main(int argc, char* argv[])
         }
     }
 
-    // register built-in plugins
-    MjpegPlugin::Register(&agent);
-
-    agent.LoadPlugins(pluginsdir);
-
     register_interrupts();
 
     int ret = EXIT_SUCCESS;
     try {
+        // register built-in plugins
+        MjpegPlugin::Register(&agent);
+        agent.LoadPlugins(pluginsdir);
         Stream stream(streamport);
         X11CursorThread cursor_thread(stream);
         FrameLog frame_log(log_filename, log_binary);
-        do_capture(stream, streamport, frame_log);
+        agent.CaptureLoop(stream, frame_log);
     }
     catch (Error &err) {
         err.syslog();
@@ -641,6 +638,7 @@ int main(int argc, char* argv[])
         syslog(LOG_ERR, "%s\n", err.what());
         ret = EXIT_FAILURE;
     }
+
     closelog();
     return ret;
 }
