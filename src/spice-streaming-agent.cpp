@@ -126,6 +126,12 @@ static void handle_stream_capabilities(uint32_t len)
     }
 }
 
+static void handle_stream_error(uint32_t len)
+{
+    // TODO read message and use it
+    throw std::runtime_error("got an error message from server");
+}
+
 static void read_command_from_device(void)
 {
     StreamDevHeader hdr;
@@ -145,6 +151,8 @@ static void read_command_from_device(void)
     switch (hdr.type) {
     case STREAM_TYPE_CAPABILITIES:
         return handle_stream_capabilities(hdr.size);
+    case STREAM_TYPE_NOTIFY_ERROR:
+        return handle_stream_error(hdr.size);
     case STREAM_TYPE_START_STOP:
         return handle_stream_start_stop(hdr.size);
     }
