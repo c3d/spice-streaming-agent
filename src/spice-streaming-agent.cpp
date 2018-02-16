@@ -77,10 +77,31 @@ static int have_something_to_read(int timeout)
     return 0;
 }
 
+static void handle_stream_start_stop(uint32_t len)
+{
+    uint8_t msg[256];
+
+    if (len >= sizeof(msg)) {
+        throw std::runtime_error("msg size (" + std::to_string(len) + ") is too long "
+                                 "(longer than " + std::to_string(sizeof(msg)) + ")");
+    }
+    int n = read(streamfd, &msg, len);
+    if (n != len) {
+        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
+                                 " expected " + std::to_string(len));
+    }
+    streaming_requested = (msg[0] != 0); /* num_codecs */
+    syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
+           streaming_requested ? "START" : "STOP");
+    client_codecs.clear();
+    for (int i = 1; i <= msg[0]; ++i) {
+        client_codecs.insert((SpiceVideoCodecType) msg[i]);
+    }
+}
+
 static void read_command_from_device(void)
 {
     StreamDevHeader hdr;
-    uint8_t msg[64];
     int n;
 
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
@@ -93,25 +114,12 @@ static void read_command_from_device(void)
         throw std::runtime_error("BAD VERSION " + std::to_string(hdr.protocol_version) +
                                  " (expected is " + std::to_string(STREAM_DEVICE_PROTOCOL) + ")");
     }
-    if (hdr.type != STREAM_TYPE_START_STOP) {
-        throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
+
+    switch (hdr.type) {
+    case STREAM_TYPE_START_STOP:
+        return handle_stream_start_stop(hdr.size);
     }
-    if (hdr.size >= sizeof(msg)) {
-        throw std::runtime_error("msg size (" + std::to_string(hdr.size) + ") is too long "
-                                 "(longer than " + std::to_string(sizeof(msg)) + ")");
-    }
-    n = read(streamfd, &msg, hdr.size);
-    if (n != hdr.size) {
-        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
-                                 " expected " + std::to_string(hdr.size));
-    }
-    streaming_requested = (msg[0] != 0); /* num_codecs */
-    syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
-           streaming_requested ? "START" : "STOP");
-    client_codecs.clear();
-    for (int i = 1; i <= msg[0]; ++i) {
-        client_codecs.insert((SpiceVideoCodecType) msg[i]);
-    }
+    throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
 }
 
 static int read_command(bool blocking)
