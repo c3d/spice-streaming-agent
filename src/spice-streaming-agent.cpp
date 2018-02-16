@@ -40,6 +40,8 @@
 
 using namespace spice::streaming_agent;
 
+static size_t write_all(int fd, const void *buf, const size_t len);
+
 static ConcreteAgent agent;
 
 struct SpiceStreamFormatMessage
@@ -99,6 +101,31 @@ static void handle_stream_start_stop(uint32_t len)
     }
 }
 
+static void handle_stream_capabilities(uint32_t len)
+{
+    uint8_t caps[STREAM_MSG_CAPABILITIES_MAX_BYTES];
+
+    if (len > sizeof(caps)) {
+        throw std::runtime_error("capability message too long");
+    }
+    int n = read(streamfd, caps, len);
+    if (n != len) {
+        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
+                                 " expected " + std::to_string(len));
+    }
+
+    // we currently do not support extensions so just reply so
+    StreamDevHeader hdr = {
+        STREAM_DEVICE_PROTOCOL,
+        0,
+        STREAM_TYPE_CAPABILITIES,
+        0
+    };
+    if (write_all(streamfd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
+        throw std::runtime_error("error writing capabilities");
+    }
+}
+
 static void read_command_from_device(void)
 {
     StreamDevHeader hdr;
@@ -116,6 +143,8 @@ static void read_command_from_device(void)
     }
 
     switch (hdr.type) {
+    case STREAM_TYPE_CAPABILITIES:
+        return handle_stream_capabilities(hdr.size);
     case STREAM_TYPE_START_STOP:
         return handle_stream_start_stop(hdr.size);
     }
