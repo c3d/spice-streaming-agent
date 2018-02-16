@@ -9,6 +9,7 @@
 #include <syslog.h>
 #include <glob.h>
 #include <dlfcn.h>
+#include <string>
 
 #include "concrete-agent.hpp"
 
