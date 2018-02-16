@@ -48,6 +48,17 @@ namespace spice
 namespace streaming_agent
 {
 
+/* returns current time in micro-seconds */
+static uint64_t get_time(void)
+{
+    struct timeval now;
+
+    gettimeofday(&now, NULL);
+
+    return (uint64_t)now.tv_sec * 1000000 + (uint64_t)now.tv_usec;
+
+}
+
 class Stream
 {
     typedef std::set<SpiceVideoCodecType> codecs_t;
@@ -218,6 +229,46 @@ private:
     Display *display;
 };
 
+class FrameLog
+{
+public:
+    FrameLog(const char *filename, bool binary = false);
+    ~FrameLog();
+
+    operator bool() { return log != NULL; }
+    void dump(const void *buffer, size_t length);
+
+private:
+    FILE *log;
+    bool binary;
+};
+
+
+FrameLog::FrameLog(const char *filename, bool binary)
+    : log(filename ? fopen(filename, "wb") : NULL), binary(binary)
+{
+    if (filename && !log) {
+        // We do not abort the program in that case, it's only a warning
+        syslog(LOG_WARNING, "Failed to open hexdump log file '%s': %m\n", filename);
+    }
+}
+
+FrameLog::~FrameLog()
+{
+    if (log)
+        fclose(log);
+}
+
+void FrameLog::dump(const void *buffer, size_t length)
+{
+    if (binary) {
+        fwrite(buffer, length, 1, log);
+    } else {
+        fprintf(log, "%" PRIu64 ": Frame of %zu bytes:\n", get_time(), length);
+        hexdump(buffer, length, log);
+    }
+}
+
 class X11CursorThread
 {
 public:
@@ -279,11 +330,9 @@ X11CursorThread::X11CursorThread(Stream &stream)
     thread.detach();
 }
 
-
 }} // namespace spice::streaming_agent
 
 static bool quit_requested = false;
-static bool log_binary = false;
 
 int Stream::have_something_to_read(int timeout)
 {
@@ -407,17 +456,6 @@ void Stream::write_all(const char *operation, const void *buf, const size_t len)
     syslog(LOG_DEBUG, "write_all -- %zu bytes written\n", written);
 }
 
-/* returns current time in micro-seconds */
-static uint64_t get_time(void)
-{
-    struct timeval now;
-
-    gettimeofday(&now, NULL);
-
-    return (uint64_t)now.tv_sec * 1000000 + (uint64_t)now.tv_usec;
-
-}
-
 static void handle_interrupt(int intr)
 {
     syslog(LOG_INFO, "Got signal %d, exiting", intr);
@@ -452,7 +490,7 @@ static void usage(const char *progname)
 }
 
 static void
-do_capture(Stream &stream, const char *streamport, FILE *f_log)
+do_capture(Stream &stream, const char *streamport, FrameLog &frame_log)
 {
     unsigned int frame_count = 0;
     while (!quit_requested) {
@@ -504,14 +542,8 @@ do_capture(Stream &stream, const char *streamport, FILE *f_log)
 
                 stream.send<FormatMessage>(width, height, codec);
             }
-            if (f_log) {
-                if (log_binary) {
-                    fwrite(frame.buffer, frame.buffer_size, 1, f_log);
-                } else {
-                    fprintf(f_log, "%" PRIu64 ": Frame of %zu bytes:\n",
-                            get_time(), frame.buffer_size);
-                    hexdump(frame.buffer, frame.buffer_size, f_log);
-                }
+            if (frame_log) {
+                frame_log.dump(frame.buffer, frame.buffer_size);
             }
             stream.send<FrameMessage>(frame.buffer, frame.buffer_size);
             //usleep(1);
@@ -530,6 +562,7 @@ int main(int argc, char* argv[])
     const char *streamport = "/dev/virtio-ports/com.redhat.stream.0";
     int opt;
     const char *log_filename = NULL;
+    bool log_binary = false;
     int logmask = LOG_UPTO(LOG_WARNING);
     const char *pluginsdir = PLUGINSDIR;
     enum {
@@ -549,7 +582,7 @@ int main(int argc, char* argv[])
 
     setlogmask(logmask);
 
-    while ((opt = getopt_long(argc, argv, "hp:c:l:d", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "bhp:c:l:d", long_options, NULL)) != -1) {
         switch (opt) {
         case 0:
             /* Handle long options if needed */
@@ -593,21 +626,12 @@ int main(int argc, char* argv[])
 
     register_interrupts();
 
-    FILE *f_log = NULL;
-    if (log_filename) {
-        f_log = fopen(log_filename, "wb");
-        if (!f_log) {
-            syslog(LOG_ERR, "Failed to open log file '%s': %s\n",
-                   log_filename, strerror(errno));
-            return EXIT_FAILURE;
-        }
-    }
-
     int ret = EXIT_SUCCESS;
     try {
         Stream stream(streamport);
         X11CursorThread cursor_thread(stream);
-        do_capture(stream, streamport, f_log);
+        FrameLog frame_log(log_filename, log_binary);
+        do_capture(stream, streamport, frame_log);
     }
     catch (Error &err) {
         err.syslog();
@@ -616,11 +640,6 @@ int main(int argc, char* argv[])
     catch (std::runtime_error &err) {
         syslog(LOG_ERR, "%s\n", err.what());
         ret = EXIT_FAILURE;
-    }
-
-    if (f_log) {
-        fclose(f_log);
-        f_log = NULL;
     }
     closelog();
     return ret;
