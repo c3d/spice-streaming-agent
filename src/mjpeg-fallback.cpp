@@ -47,7 +47,7 @@ private:
     std::vector<uint8_t> frame;
 
     // last frame sizes
-    int last_width = ~0u, last_height = ~0u;
+    int last_width = -1, last_height = -1;
     // last time before capture
     uint64_t last_time = 0;
 };

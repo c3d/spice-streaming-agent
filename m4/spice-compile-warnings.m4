@@ -107,7 +107,6 @@ AC_DEFUN([SPICE_COMPILE_WARNINGS],[
     # Unfortunately, this means you can't simply use '-Wsign-compare'
     # with gl_MANYWARN_COMPLEMENT
     # So we have -W enabled, and then have to explicitly turn off...
-    gl_WARN_ADD([-Wno-sign-compare])
     gl_WARN_ADD([-Wno-unused-parameter])
     gl_WARN_ADD([-Wno-missing-field-initializers])
     # We can't enable this due to horrible spice_usb_device_get_description
