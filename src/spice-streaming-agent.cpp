@@ -94,17 +94,17 @@ static int read_command_from_device(void)
     if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
         syslog(LOG_WARNING, "BAD VERSION %d (expected is %d)\n", hdr.protocol_version,
                STREAM_DEVICE_PROTOCOL);
-        return 0; // return -1; -- fail over this ?
+        return -1;
     }
     if (hdr.type != STREAM_TYPE_START_STOP) {
         syslog(LOG_WARNING, "UNKNOWN msg of type %d\n", hdr.type);
-        return 0; // return -1;
+        return -1;
     }
     if (hdr.size >= sizeof(msg)) {
         syslog(LOG_WARNING,
                "msg size (%d) is too long (longer than %lu)\n",
                hdr.size, sizeof(msg));
-        return 0; // return -1;
+        return -1;
     }
     n = read(streamfd, &msg, hdr.size);
     if (n != hdr.size) {
