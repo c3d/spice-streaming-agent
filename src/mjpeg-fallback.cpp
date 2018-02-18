@@ -26,9 +26,6 @@ using namespace spice::streaming_agent;
     throw std::runtime_error(_s.str()); \
 } while(0)
 
-#define FBC_ERROR(function) \
-    ERROR(function " failed(" << fbcStatus << "): " << pFn.nvFBCGetLastErrorStr(fbcHandle))
-
 static inline uint64_t get_time()
 {
     timespec now;
