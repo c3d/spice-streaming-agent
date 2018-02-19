@@ -9,6 +9,7 @@ Source0:        %{name}-%{version}.tar.xz
 BuildRequires:  spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
 BuildRequires:  libX11-devel libXfixes-devel
 BuildRequires:  libjpeg-turbo-devel
+BuildRequires:  catch-devel
 # we need /usr/sbin/semanage program which is available on different
 # packages depending on distribution
 Requires(post): /usr/sbin/semanage
