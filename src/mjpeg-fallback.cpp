@@ -19,12 +19,6 @@
 
 using namespace spice::streaming_agent;
 
-#define ERROR(args) do { \
-    std::ostringstream _s; \
-    _s << args; \
-    throw std::runtime_error(_s.str()); \
-} while(0)
-
 static inline uint64_t get_time()
 {
     timespec now;
@@ -65,7 +59,7 @@ MjpegFrameCapture::MjpegFrameCapture(const MjpegSettings& settings):
 {
     dpy = XOpenDisplay(NULL);
     if (!dpy)
-        ERROR("Unable to initialize X11");
+        throw std::runtime_error("Unable to initialize X11");
 }
 
 MjpegFrameCapture::~MjpegFrameCapture()
