@@ -663,7 +663,7 @@ int main(int argc, char* argv[])
         err.syslog();
         ret = EXIT_FAILURE;
     }
-    catch (std::runtime_error &err) {
+    catch (std::exception &err) {
         syslog(LOG_ERR, "%s\n", err.what());
         ret = EXIT_FAILURE;
     }
