@@ -129,7 +129,14 @@ FrameCapture *ConcreteAgent::GetBestFrameCapture(const std::set<SpiceVideoCodecT
         // check client supports the codec
         if (codecs.find(plugin.second->VideoCodecType()) == codecs.end())
             continue;
-        FrameCapture *capture = plugin.second->CreateCapture();
+
+        FrameCapture *capture;
+        try {
+            capture = plugin.second->CreateCapture();
+        } catch (const std::exception &err) {
+            syslog(LOG_ERR, "Error creating capture engine: %s", err.what());
+            continue;
+        }
         if (capture) {
             return capture;
         }
