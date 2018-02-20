@@ -65,7 +65,7 @@ struct CursorMessage
 
 class Stream
 {
-    typedef std::set<SpiceVideoCodecType> CodecSet;;
+    typedef std::set<SpiceVideoCodecType> CodecSet;
 
 public:
     Stream(const char *name)
@@ -81,6 +81,7 @@ public:
     }
 
     const CodecSet &client_codecs() const { return codecs; }
+    bool streaming_requested() const { return is_streaming; }
 
     int read_command(bool blocking);
     size_t write_all(const void *buf, const size_t len);
@@ -102,11 +103,11 @@ private:
     std::mutex mutex;
     CodecSet codecs;
     int streamfd = -1;
+    bool is_streaming = false;
 };
 
 }} // namespace spice::streaming_agent
 
-static bool streaming_requested = false;
 static bool quit_requested = false;
 static bool log_binary = false;
 
@@ -154,9 +155,9 @@ void Stream::handle_stream_start_stop(size_t len)
     }
 
     read_all(msg, len);
-    streaming_requested = (msg[0] != 0); /* num_codecs */
+    is_streaming = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
-           streaming_requested ? "START" : "STOP");
+           is_streaming ? "START" : "STOP");
     codecs.clear();
     for (int i = 1; i <= msg[0]; ++i) {
         codecs.insert((SpiceVideoCodecType) msg[i]);
@@ -452,7 +453,7 @@ do_capture(Stream &stream, const char *streamport, FILE *f_log)
 {
     unsigned int frame_count = 0;
     while (!quit_requested) {
-        while (!quit_requested && !streaming_requested) {
+        while (!quit_requested && !stream.streaming_requested()) {
             if (stream.read_command(true) < 0) {
                 syslog(LOG_ERR, "FAILED to read command\n");
                 return;
@@ -471,7 +472,7 @@ do_capture(Stream &stream, const char *streamport, FILE *f_log)
             throw std::runtime_error("cannot find a suitable capture system");
         }
 
-        while (!quit_requested && streaming_requested) {
+        while (!quit_requested && stream.streaming_requested()) {
             if (++frame_count % 100 == 0) {
                 syslog(LOG_DEBUG, "SENT %d frames\n", frame_count);
             }
