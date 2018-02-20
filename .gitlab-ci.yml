@@ -1,0 +1,13 @@
+image: fedora:latest
+
+before_script:
+    - dnf install 'dnf-command(copr)' automake autoconf libtool gcc-c++ -y
+    - dnf copr enable @spice/nightly -y
+    - dnf builddep spice-streaming-agent -y
+
+build_and_test:
+  script:
+    - autoreconf -fi
+    - ./configure
+    - make
+    - make check
