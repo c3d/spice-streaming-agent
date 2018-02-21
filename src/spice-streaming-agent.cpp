@@ -137,10 +137,30 @@ static void handle_stream_capabilities(uint32_t len)
     }
 }
 
-static void handle_stream_error(uint32_t len)
+static void handle_stream_error(size_t len)
 {
-    // TODO read message and use it
-    throw std::runtime_error("got an error message from server");
+    if (len < sizeof(StreamMsgNotifyError)) {
+        throw std::runtime_error("Received NotifyError message size " + std::to_string(len) +
+                                 " is too small (smaller than " +
+                                 std::to_string(sizeof(StreamMsgNotifyError)) + ")");
+    }
+
+    struct : StreamMsgNotifyError {
+        uint8_t msg[1024];
+    } msg;
+
+    size_t len_to_read = std::min(len, sizeof(msg) - 1);
+
+    read_all(&msg, len_to_read);
+    msg.msg[len_to_read - sizeof(StreamMsgNotifyError)] = '\0';
+
+    syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s\n",
+        msg.error_code, msg.msg);
+
+    if (len_to_read < len) {
+        throw std::runtime_error("Received NotifyError message size " + std::to_string(len) +
+                                 " is too big (bigger than " + std::to_string(sizeof(msg)) + ")");
+    }
 }
 
 static void read_command_from_device(void)
