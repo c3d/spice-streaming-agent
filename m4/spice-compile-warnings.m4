@@ -86,6 +86,7 @@ AC_DEFUN([SPICE_COMPILE_WARNINGS],[
     dontwarn="$dontwarn -Wpointer-sign"
     dontwarn="$dontwarn -Wpointer-to-int-cast"
     dontwarn="$dontwarn -Wstrict-prototypes"
+    dontwarn="$dontwarn -Wmissing-field-initializers"
 
     # We want to enable these, but need to sort out the
     # decl mess with  gtk/generated_*.c
@@ -108,6 +109,7 @@ AC_DEFUN([SPICE_COMPILE_WARNINGS],[
     # So we have -W enabled, and then have to explicitly turn off...
     gl_WARN_ADD([-Wno-sign-compare])
     gl_WARN_ADD([-Wno-unused-parameter])
+    gl_WARN_ADD([-Wno-missing-field-initializers])
     # We can't enable this due to horrible spice_usb_device_get_description
     # signature
     gl_WARN_ADD([-Wno-format-nonliteral])
