@@ -283,6 +283,7 @@ static void usage(const char *progname)
     printf("\t-p portname  -- virtio-serial port to use\n");
     printf("\t-l file -- log frames to file\n");
     printf("\t--log-binary -- log binary frames (following -l)\n");
+    printf("\t--plugins-dir=path -- change plugins directory\n");
     printf("\t-d -- enable debug logs\n");
     printf("\t-c variable=value -- change settings\n");
     printf("\t\tframerate = 1-100 (check 10,20,30,40,50,60)\n");
@@ -445,10 +446,15 @@ done:
 int main(int argc, char* argv[])
 {
     const char *streamport = "/dev/virtio-ports/com.redhat.stream.0";
-    char opt;
+    int opt;
     const char *log_filename = NULL;
     int logmask = LOG_UPTO(LOG_WARNING);
+    const char *pluginsdir = PLUGINSDIR;
+    enum {
+        OPT_PLUGINS_DIR = UCHAR_MAX+1
+    };
     struct option long_options[] = {
+        { "plugins-dir", required_argument, NULL, OPT_PLUGINS_DIR},
         { "log-binary", no_argument, &log_binary, 1},
         { "help", no_argument, NULL, 'h'},
         { 0, 0, 0, 0}
@@ -463,6 +469,9 @@ int main(int argc, char* argv[])
         switch (opt) {
         case 0:
             /* Handle long options if needed */
+            break;
+        case OPT_PLUGINS_DIR:
+            pluginsdir = optarg;
             break;
         case 'p':
             streamport = optarg;
@@ -493,7 +502,7 @@ int main(int argc, char* argv[])
     // register built-in plugins
     MjpegPlugin::Register(&agent);
 
-    agent.LoadPlugins(PLUGINSDIR);
+    agent.LoadPlugins(pluginsdir);
 
     register_interrupts();
 
