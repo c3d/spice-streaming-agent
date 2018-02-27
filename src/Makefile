@@ -14,6 +14,7 @@ SOURCES=	spice-streaming-agent.cpp 				\
 		concrete-agent.cpp					\
 		mjpeg-fallback.cpp					\
 		jpeg.cpp						\
+		errors.cpp						\
 		hexdump.c
 
 INCLUDES=	.							\
