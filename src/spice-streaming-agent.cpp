@@ -7,6 +7,7 @@
 #include "concrete-agent.hpp"
 #include "stream.hpp"
 #include "message.hpp"
+#include "x11-cursor.hpp"
 #include "hexdump.h"
 #include "mjpeg-fallback.hpp"
 
@@ -37,8 +38,6 @@
 #include <vector>
 #include <string>
 #include <functional>
-#include <X11/Xlib.h>
-#include <X11/extensions/Xfixes.h>
 
 using namespace spice::streaming_agent;
 
@@ -85,63 +84,6 @@ public:
     }
 };
 
-class X11CursorMessage : public Message<StreamMsgCursorSet, X11CursorMessage, STREAM_TYPE_CURSOR_SET>
-{
-public:
-    X11CursorMessage(XFixesCursorImage *cursor): Message(cursor) {}
-    static size_t size(XFixesCursorImage *cursor)
-    {
-        return sizeof(MessagePayload) + sizeof(uint32_t) * pixel_count(cursor);
-    }
-
-    void write_message_body(Stream &stream, XFixesCursorImage *cursor)
-    {
-        StreamMsgCursorSet msg = {
-            .width = cursor->width,
-            .height = cursor->height,
-            .hot_spot_x = cursor->xhot,
-            .hot_spot_y = cursor->yhot,
-            .type = SPICE_CURSOR_TYPE_ALPHA,
-            .padding1 = { },
-            .data = { }
-        };
-
-        size_t pixcount = pixel_count(cursor);
-        size_t pixsize = pixcount * sizeof(uint32_t);
-        std::unique_ptr<uint32_t[]> pixels(new uint32_t[pixcount]);
-        uint32_t *pixbuf = pixels.get();
-        fill_pixels(cursor, pixcount, pixbuf);
-
-        stream.write_all("cursor message", &msg, sizeof(msg));
-        stream.write_all("cursor pixels", pixbuf, pixsize);
-    }
-
-private:
-    static size_t pixel_count(XFixesCursorImage *cursor)
-    {
-        return cursor->width * cursor->height;
-    }
-
-    static void fill_pixels(XFixesCursorImage *cursor, unsigned count, uint32_t *pixbuf)
-    {
-        for (unsigned i = 0; i < count; ++i) {
-            pixbuf[i] = cursor->pixels[i];
-        }
-    }
-};
-
-class X11CursorUpdater
-{
-public:
-    X11CursorUpdater(Stream &stream);
-    ~X11CursorUpdater();
-    void send_cursor_changes();
-
-private:
-    Stream &stream;
-    Display *display;
-};
-
 class FrameLog
 {
 public:
@@ -182,67 +124,6 @@ void FrameLog::dump(const void *buffer, size_t length)
             hexdump(buffer, length, log);
         }
     }
-}
-
-class X11CursorThread
-{
-public:
-    X11CursorThread(Stream &stream);
-    static void record_cursor_changes(X11CursorThread *self) { self->updater.send_cursor_changes(); }
-
-private:
-    X11CursorUpdater updater;
-    std::thread thread;
-};
-
-X11CursorUpdater::X11CursorUpdater(Stream &stream)
-    : stream(stream),
-      display(XOpenDisplay(NULL))
-{
-    if (display == NULL) {
-        throw Error("failed to open display").syslog();
-    }
-}
-
-X11CursorUpdater::~X11CursorUpdater()
-{
-    XCloseDisplay(display);
-}
-
-void X11CursorUpdater::send_cursor_changes()
-{
-    unsigned long last_serial = 0;
-
-    int event_base, error_base;
-    if (!XFixesQueryExtension(display, &event_base, &error_base)) {
-        syslog(LOG_WARNING, "XFixesQueryExtension failed, not sending cursor changes\n");
-        return; // also terminates the X11CursorThread if that's how we were launched
-    }
-    Window rootwindow = DefaultRootWindow(display);
-    XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
-
-    while (true) {
-        XEvent event;
-        XNextEvent(display, &event);
-        if (event.type != event_base + 1) {
-            continue;
-        }
-
-        XFixesCursorImage *cursor = XFixesGetCursorImage(display);
-        if (!cursor || cursor->cursor_serial == last_serial) {
-            continue;
-        }
-
-        last_serial = cursor->cursor_serial;
-        stream.send<X11CursorMessage>(cursor);
-    }
-}
-
-X11CursorThread::X11CursorThread(Stream &stream)
-    : updater(stream),
-      thread(record_cursor_changes, this)
-{
-    thread.detach();
 }
 
 }} // namespace spice::streaming_agent

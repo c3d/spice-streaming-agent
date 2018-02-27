@@ -60,4 +60,6 @@ spice_streaming_agent_SOURCES = \
 	stream.cpp \
 	stream.hpp \
 	errors.cpp \
+	x11-cursor.hpp \
+	x11-cursor.cpp \
 	$(NULL)
