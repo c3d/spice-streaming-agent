@@ -5,7 +5,6 @@
  */
 
 #include "concrete-agent.hpp"
-#include "agent-errors.hpp"
 #include "hexdump.h"
 #include "mjpeg-fallback.hpp"
 
@@ -14,6 +13,7 @@
 
 #include <spice-streaming-agent/frame-capture.hpp>
 #include <spice-streaming-agent/plugin.hpp>
+#include <spice-streaming-agent/errors.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,7 +67,7 @@ public:
     {
         streamfd = open(name, O_RDWR);
         if (streamfd < 0) {
-            throw std::runtime_error("failed to open streaming device");
+            throw IOError("failed to open streaming device", errno);
         }
     }
     ~Stream()
@@ -353,13 +353,11 @@ void Stream::handle_stream_start_stop(uint32_t len)
     uint8_t msg[256];
 
     if (len >= sizeof(msg)) {
-        throw std::runtime_error("msg size (" + std::to_string(len) + ") is too long "
-                                 "(longer than " + std::to_string(sizeof(msg)) + ")");
+        throw MessageDataError("message is too long", len, sizeof(msg));
     }
     int n = read(streamfd, &msg, len);
     if (n != (int) len) {
-        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
-                                 " expected " + std::to_string(len));
+        throw MessageDataError("read start/stop command from device failed", n, len, errno);
     }
     is_streaming = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
@@ -375,12 +373,11 @@ void Stream::handle_stream_capabilities(uint32_t len)
     uint8_t caps[STREAM_MSG_CAPABILITIES_MAX_BYTES];
 
     if (len > sizeof(caps)) {
-        throw std::runtime_error("capability message too long");
+        throw MessageDataError("capability message too long", len, sizeof(caps));
     }
     int n = read(streamfd, caps, len);
     if (n != (int) len) {
-        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
-                                 " expected " + std::to_string(len));
+        throw MessageDataError("read capabilities from device failed", n, len, errno);
     }
 
     // we currently do not support extensions so just reply so
@@ -390,7 +387,7 @@ void Stream::handle_stream_capabilities(uint32_t len)
 void Stream::handle_stream_error(uint32_t len)
 {
     // TODO read message and use it
-    throw std::runtime_error("got an error message from server");
+    throw ProtocolError("got an error message from server");
 }
 
 void Stream::read_command_from_device()
@@ -401,12 +398,10 @@ void Stream::read_command_from_device()
     std::lock_guard<std::mutex> stream_guard(mutex);
     n = read(streamfd, &hdr, sizeof(hdr));
     if (n != sizeof(hdr)) {
-        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
-                                 " expected " + std::to_string(sizeof(hdr)));
+        throw MessageDataError("read command from device failed", n, sizeof(hdr), errno);
     }
     if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
-        throw std::runtime_error("BAD VERSION " + std::to_string(hdr.protocol_version) +
-                                 " (expected is " + std::to_string(STREAM_DEVICE_PROTOCOL) + ")");
+        throw MessageDataError("bad protocol version", hdr.protocol_version, STREAM_DEVICE_PROTOCOL);
     }
 
     switch (hdr.type) {
@@ -417,7 +412,7 @@ void Stream::read_command_from_device()
     case STREAM_TYPE_START_STOP:
         return handle_stream_start_stop(hdr.size);
     }
-    throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
+    throw MessageDataError("unknown message type", hdr.type, 0);
 }
 
 int Stream::read_command(bool blocking)
@@ -508,7 +503,7 @@ void ConcreteAgent::CaptureLoop(Stream &stream, FrameLog &frame_log)
 
         std::unique_ptr<FrameCapture> capture(GetBestFrameCapture(stream.client_codecs()));
         if (!capture) {
-            throw std::runtime_error("cannot find a suitable capture system");
+            throw Error("cannot find a suitable capture system");
         }
 
         while (!quit_requested && stream.streaming_requested()) {

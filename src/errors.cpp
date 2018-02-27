@@ -33,7 +33,42 @@ const Error &Error::syslog() const noexcept
 
 int IOError::format_message(char *buffer, size_t size) const noexcept
 {
-    return snprintf(buffer, size, "%s: %s (errno %d)", what(), strerror(saved_errno), saved_errno);
+    if (saved_errno) {
+        return snprintf(buffer, size, "%s: %s (errno %d)",
+                        what(), strerror(saved_errno), saved_errno);
+    }
+    return snprintf(buffer, size, "%s", what());
 }
+
+int IOError::append_strerror(char *buffer, size_t size, int written) const noexcept
+{
+    // The conversion of written to size_t also deals with the case where written < 0
+    if (saved_errno && (size_t) written < size) {
+        written += snprintf(buffer + written, size - written, ": %s (errno %d)",
+                            strerror(saved_errno), saved_errno);
+    }
+    return written;
+}
+
+int WriteError::format_message(char *buffer, size_t size) const noexcept
+{
+    int written = snprintf(buffer, size, "%s", what());
+    return append_strerror(buffer, size, written);
+}
+
+
+
+int MessageDataError::format_message(char *buffer, size_t size) const noexcept
+{
+    int written = snprintf(buffer, size, "%s (received %zu, expected %zu)",
+                           what(), received, expected);
+    return append_strerror(buffer, size, written);
+}
+
+int OptionError::format_message(char *buffer, size_t size) const noexcept
+{
+    return snprintf(buffer, size, "%s ('%s' is not a valid %s)", what(), value, option);
+}
+
 
 }} // namespace spice::streaming_agent
