@@ -13,6 +13,7 @@
 
 #include <spice-streaming-agent/frame-capture.hpp>
 #include <spice-streaming-agent/plugin.hpp>
+#include <spice-streaming-agent/errors.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -627,6 +628,10 @@ int main(int argc, char* argv[])
     int ret = EXIT_SUCCESS;
     try {
         do_capture(stream, streamport, f_log);
+    }
+    catch (Error &err) {
+        err.syslog();
+        ret = EXIT_FAILURE;
     }
     catch (std::runtime_error &err) {
         syslog(LOG_ERR, "%s\n", err.what());

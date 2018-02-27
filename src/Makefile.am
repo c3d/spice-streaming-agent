@@ -56,4 +56,5 @@ spice_streaming_agent_SOURCES = \
 	mjpeg-fallback.hpp \
 	jpeg.cpp \
 	jpeg.hpp \
+	errors.cpp \
 	$(NULL)
