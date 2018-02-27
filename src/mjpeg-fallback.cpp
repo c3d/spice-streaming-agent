@@ -7,6 +7,8 @@
 #include <config.h>
 #include "mjpeg-fallback.hpp"
 
+#include <spice-streaming-agent/errors.hpp>
+
 #include <cstring>
 #include <exception>
 #include <stdexcept>
@@ -59,7 +61,7 @@ MjpegFrameCapture::MjpegFrameCapture(const MjpegSettings& settings):
 {
     dpy = XOpenDisplay(NULL);
     if (!dpy)
-        throw std::runtime_error("Unable to initialize X11");
+        throw Error("unable to initialize X11");
 }
 
 MjpegFrameCapture::~MjpegFrameCapture()
@@ -157,14 +159,17 @@ void MjpegPlugin::ParseOptions(const ConfigureOption *options)
             try {
                 settings.fps = stoi(value);
             } catch (const std::exception &e) {
-                throw std::runtime_error("Invalid value '" + value + "' for option 'framerate'.");
+                throw OptionValueError("invalid MJPEG framerate",
+                                       options->value, "mjpeg.framerate");
             }
         } else if (name == "mjpeg.quality") {
             try {
                 settings.quality = stoi(value);
             } catch (const std::exception &e) {
-                throw std::runtime_error("Invalid value '" + value + "' for option 'mjpeg.quality'.");
+                throw OptionValueError("invalid MJPEG quality", options->value, "mjpeg.quality");
             }
+        } else {
+            throw OptionError("invalid MJPEG option name", options->name);
         }
     }
 }

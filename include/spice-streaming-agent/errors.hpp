@@ -7,6 +7,7 @@
 #define SPICE_STREAMING_AGENT_ERRORS_HPP
 
 #include <exception>
+#include <string>
 #include <stddef.h>
 
 namespace spice {
@@ -72,6 +73,7 @@ public:
 
     /*! The base message followed by the file name */
     int format_message(char *buffer, size_t size) const noexcept override;
+
 protected:
     std::string filename;
 };
@@ -88,6 +90,7 @@ public:
 
     /*! Format a message in the form "Write error writing operation" */
     int format_message(char *buffer, size_t size) const noexcept override;
+
 protected:
     const char *operation;
 };
@@ -98,6 +101,65 @@ class ReadError : public IOError
 public:
     /*! Create a read error associated with an operating system errno if available */
     ReadError(const char *msg, int saved_errno): IOError(msg, saved_errno) {}
+};
+
+/*! Protocol errors while reading incoming messages, i.e. in-message inconsistencies.
+ *  Note that protocol errors often have no associated errno, since the problem is with
+ *  the content of the message, which the operating system does not care about. */
+class ProtocolError : public ReadError
+{
+public:
+    ProtocolError(const char *msg, int saved_errno = 0): ReadError(msg, saved_errno) {}
+};
+
+/*! Violations of the protocol which reside from incorrect data in an incoming message.
+ *  In this case, we can report what was received and what was expected */
+class MessageDataError : public ProtocolError
+{
+public:
+    /*! Construct an error that records what was actually received and the expected value */
+    MessageDataError(const char *msg, size_t received, size_t expected, int saved_errno = 0)
+        : ProtocolError(msg, saved_errno), received(received), expected(expected) {}
+
+    /*! Format the message, reporting expected and received values */
+    int format_message(char *buffer, size_t size) const noexcept override;
+
+protected:
+    size_t received;
+    size_t expected;
+};
+
+/*! Errors related to option parsing.
+ *  If a plugin does not recognize a specific option, it should throw an OptionError directly.
+ *  Note that the agent may retry the same option with a different plugin in that case. */
+class OptionError : public Error
+{
+public:
+    /*! Create an option error with a given base message and the invalid option */
+    OptionError(const char *msg, const char *option) : Error(msg), option(option) {}
+
+    /*! Generates a message indicating which option was not recognized. */
+    int format_message(char *buffer, size_t size) const noexcept override;
+
+protected:
+    const char *option;
+};
+
+/*! Errors related to the value for known options.
+ *  If a plugin does not accept a specific option value, it should throw OptionValueError.
+ *  Note that the agent may retry the same option value with a different plugin in that case. */
+class OptionValueError : public OptionError
+{
+public:
+    /*! Create an option value error with a given base message, option name and value */
+    OptionValueError(const char *msg, const char *option, const char *value)
+        : OptionError(msg, option), value(value) {}
+
+    /*! Generate a message indicating which value was invalid and for which option. */
+    int format_message(char *buffer, size_t size) const noexcept override;
+
+protected:
+    const char *value;
 };
 
 }} // namespace spice::streaming_agent

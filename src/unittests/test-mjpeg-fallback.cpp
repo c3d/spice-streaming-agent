@@ -32,9 +32,10 @@ SCENARIO("test parsing mjpeg plugin options", "[mjpeg][options]") {
                 {NULL, NULL}
             };
 
-            THEN("ParseOptions should ignore the option") {
-                REQUIRE_NOTHROW(
-                    plugin.ParseOptions(options.data())
+            THEN("ParseOptions throws an exception") {
+                REQUIRE_THROWS_WITH(
+                    plugin.ParseOptions(options.data()),
+                    "invalid option name"
                 );
             }
         }
@@ -49,7 +50,7 @@ SCENARIO("test parsing mjpeg plugin options", "[mjpeg][options]") {
             THEN("ParseOptions throws an exception") {
                 REQUIRE_THROWS_WITH(
                     plugin.ParseOptions(options.data()),
-                    "Invalid value 'toot' for option 'mjpeg.quality'."
+                    "invalid mjpeg quality"
                 );
             }
         }
