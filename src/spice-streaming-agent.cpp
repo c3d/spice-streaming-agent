@@ -5,6 +5,8 @@
  */
 
 #include "concrete-agent.hpp"
+#include "stream.hpp"
+#include "message.hpp"
 #include "hexdump.h"
 #include "mjpeg-fallback.hpp"
 
@@ -22,11 +24,9 @@
 #include <inttypes.h>
 #include <string.h>
 #include <getopt.h>
-#include <unistd.h>
 #include <errno.h>
-#include <fcntl.h>
+#include <unistd.h>
 #include <sys/time.h>
-#include <poll.h>
 #include <syslog.h>
 #include <signal.h>
 #include <exception>
@@ -56,76 +56,6 @@ static uint64_t get_time(void)
 
 }
 
-class Stream
-{
-    typedef std::set<SpiceVideoCodecType> CodecSet;
-
-public:
-    Stream(const char *name)
-    {
-        streamfd = open(name, O_RDWR);
-        if (streamfd < 0) {
-            throw IOError("failed to open streaming device", errno);
-        }
-    }
-    ~Stream()
-    {
-        close(streamfd);
-    }
-
-    const CodecSet &client_codecs() const { return codecs; }
-    bool streaming_requested() const { return is_streaming; }
-
-    template <typename Message, typename ...PayloadArgs>
-    void send(PayloadArgs... payload_args)
-    {
-        Message message(payload_args...);
-        std::lock_guard<std::mutex> stream_guard(mutex);
-        message.write_header(*this);
-        message.write_message_body(*this, payload_args...);
-    }
-
-    int read_command(bool blocking);
-    void write_all(const char *operation, const void *buf, const size_t len);
-
-private:
-    int have_something_to_read(int timeout);
-    void read_all(const char *operation, void *msg, size_t len);
-    void handle_stream_start_stop(size_t len);
-    void handle_stream_capabilities(size_t len);
-    void handle_stream_error(size_t len);
-    void read_command_from_device();
-
-private:
-    std::mutex mutex;
-    CodecSet codecs;
-    int streamfd = -1;
-    bool is_streaming = false;
-};
-
-template <typename Payload, typename Info, unsigned Type>
-class Message
-{
-public:
-    template <typename ...PayloadArgs>
-    Message(PayloadArgs... payload_args)
-        : hdr(StreamDevHeader {
-              .protocol_version = STREAM_DEVICE_PROTOCOL,
-              .padding = 0,     // Workaround GCC bug "sorry: not implemented"
-              .type = Type,
-              .size = (uint32_t) Info::size(payload_args...)
-          })
-    { }
-    void write_header(Stream &stream)
-    {
-        stream.write_all("header", &hdr, sizeof(hdr));
-    }
-
-protected:
-    StreamDevHeader hdr;
-    typedef Payload MessagePayload;
-};
-
 class FormatMessage : public Message<StreamMsgFormat, FormatMessage, STREAM_TYPE_FORMAT>
 {
 public:
@@ -152,20 +82,6 @@ public:
     void write_message_body(Stream &stream, const void *frame, size_t length)
     {
         stream.write_all("frame", frame, length);
-    }
-};
-
-class CapabilitiesMessage : public Message<StreamMsgData, CapabilitiesMessage, STREAM_TYPE_CAPABILITIES>
-{
-public:
-    CapabilitiesMessage() : Message() {}
-    static size_t size()
-    {
-        return sizeof(MessagePayload);
-    }
-    void write_message_body(Stream &stream)
-    {
-        /* No body for capabilities message */
     }
 };
 
@@ -331,155 +247,7 @@ X11CursorThread::X11CursorThread(Stream &stream)
 
 }} // namespace spice::streaming_agent
 
-static bool quit_requested = false;
-
-int Stream::have_something_to_read(int timeout)
-{
-    struct pollfd pollfd = {streamfd, POLLIN, 0};
-
-    if (poll(&pollfd, 1, timeout) < 0) {
-        syslog(LOG_ERR, "poll FAILED\n");
-        return -1;
-    }
-
-    if (pollfd.revents == POLLIN) {
-        return 1;
-    }
-
-    return 0;
-}
-
-void Stream::read_all(const char *operation, void *msg, size_t len)
-{
-    while (len > 0) {
-        ssize_t n = read(streamfd, msg, len);
-
-        if (n < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            throw ReadError("reading message from device failed", operation, errno);
-        }
-
-        len -= n;
-        msg = (uint8_t *) msg + n;
-    }
-}
-
-void Stream::handle_stream_start_stop(size_t len)
-{
-    uint8_t msg[256];
-
-    if (len >= sizeof(msg)) {
-        throw MessageLengthError("stream start/stop", len, sizeof(msg));
-    }
-
-    read_all("start/stop command from device", msg, len);
-    is_streaming = (msg[0] != 0); /* num_codecs */
-    syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
-           is_streaming ? "START" : "STOP");
-    codecs.clear();
-    for (int i = 1; i <= msg[0]; ++i) {
-        codecs.insert((SpiceVideoCodecType) msg[i]);
-    }
-}
-
-void Stream::handle_stream_capabilities(size_t len)
-{
-    uint8_t caps[STREAM_MSG_CAPABILITIES_MAX_BYTES];
-
-    if (len > sizeof(caps)) {
-        throw MessageLengthError("capability", len, sizeof(caps));
-    }
-
-    read_all("capabilities from device", caps, len);
-    // we currently do not support extensions so just reply so
-    send<CapabilitiesMessage>();
-}
-
-void Stream::handle_stream_error(size_t len)
-{
-    if (len < sizeof(StreamMsgNotifyError)) {
-        throw MessageLengthError("NotifyError", len, sizeof(StreamMsgNotifyError));
-    }
-
-    struct : StreamMsgNotifyError {
-        uint8_t msg[1024];
-    } msg;
-
-    size_t len_to_read = std::min(len, sizeof(msg) - 1);
-
-    read_all("NotifyError message", &msg, len_to_read);
-    msg.msg[len_to_read - sizeof(StreamMsgNotifyError)] = '\0';
-
-    syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s\n",
-           msg.error_code, msg.msg);
-
-    if (len_to_read < len) {
-        throw MessageLengthError("NotifyError", len, sizeof(msg));
-    }
-}
-
-void Stream::read_command_from_device()
-{
-    StreamDevHeader hdr;
-    int n;
-
-    std::lock_guard<std::mutex> stream_guard(mutex);
-    n = read(streamfd, &hdr, sizeof(hdr));
-    if (n != sizeof(hdr)) {
-        throw MessageLengthError("command from device", n, sizeof(hdr), errno);
-    }
-    if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
-        throw MessageDataError("bad protocol version", "command from device",
-                               hdr.protocol_version, STREAM_DEVICE_PROTOCOL);
-    }
-
-    switch (hdr.type) {
-    case STREAM_TYPE_CAPABILITIES:
-        return handle_stream_capabilities(hdr.size);
-    case STREAM_TYPE_NOTIFY_ERROR:
-        return handle_stream_error(hdr.size);
-    case STREAM_TYPE_START_STOP:
-        return handle_stream_start_stop(hdr.size);
-    }
-    throw MessageDataError("unknown message type", "command from device",
-                           hdr.type, STREAM_TYPE_START_STOP);
-}
-
-int Stream::read_command(bool blocking)
-{
-    int timeout = blocking?-1:0;
-    while (!quit_requested) {
-        if (!have_something_to_read(timeout)) {
-            if (!blocking) {
-                return 0;
-            }
-            sleep(1);
-            continue;
-        }
-        read_command_from_device();
-        break;
-    }
-
-    return 1;
-}
-
-void Stream::write_all(const char *operation, const void *buf, const size_t len)
-{
-    size_t written = 0;
-    while (written < len) {
-        int l = write(streamfd, (const char *) buf + written, len - written);
-        if (l < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            throw WriteError("write failed", operation, errno).syslog();
-        }
-        written += l;
-    }
-    syslog(LOG_DEBUG, "write_all -- %zu bytes written\n", written);
-}
+bool quit_requested = false;
 
 static void handle_interrupt(int intr)
 {
