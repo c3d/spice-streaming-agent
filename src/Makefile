@@ -15,6 +15,7 @@ SOURCES=	spice-streaming-agent.cpp 				\
 		mjpeg-fallback.cpp					\
 		jpeg.cpp						\
 		errors.cpp						\
+		stream.cpp						\
 		hexdump.c
 
 INCLUDES=	.							\
