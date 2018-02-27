@@ -6,6 +6,8 @@
 #ifndef SPICE_STREAMING_AGENT_MESSAGE_HPP
 #define SPICE_STREAMING_AGENT_MESSAGE_HPP
 
+#include "stream.hpp"
+
 #include <spice/stream-device.h>
 
 namespace spice
