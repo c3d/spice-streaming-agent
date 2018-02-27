@@ -59,4 +59,38 @@ int WriteError::format_message(char *buffer, size_t size) const noexcept
     return append_strerror(buffer, size, written);
 }
 
+int ReadError::format_message(char *buffer, size_t size) const noexcept
+{
+    int written = snprintf(buffer, size, "%s reading %s", what(), operation);
+    return append_strerror(buffer, size, written);
+}
+
+int MessageDataError::format_message(char *buffer, size_t size) const noexcept
+{
+    int written = snprintf(buffer, size, "%s reading %s (received %zu, expected %zu)",
+                           what(), operation, received, expected);
+    return append_strerror(buffer, size, written);
+}
+
+int MessageLengthError::format_message(char *buffer, size_t size) const noexcept
+{
+    int written = snprintf(buffer, size, "%s reading %s (length was %zu, should be %s %zu)",
+                           what(), operation,
+                           received,
+                           received < expected ? "at least" : "at most",
+                           expected);
+    return append_strerror(buffer, size, written);
+}
+
+int OptionError::format_message(char *buffer, size_t size) const noexcept
+{
+    return snprintf(buffer, size, "%s '%s'", what(), option);
+}
+
+int OptionValueError::format_message(char *buffer, size_t size) const noexcept
+{
+    return snprintf(buffer, size, "%s ('%s' is not a valid value for plugin option '%s')",
+                    what(), value, option);
+}
+
 }} // namespace spice::streaming_agent

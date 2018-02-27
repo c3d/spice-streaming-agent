@@ -13,6 +13,7 @@
 
 #include <spice-streaming-agent/frame-capture.hpp>
 #include <spice-streaming-agent/plugin.hpp>
+
 #include <spice-streaming-agent/errors.hpp>
 
 #include <stdio.h>
@@ -64,7 +65,7 @@ public:
     {
         streamfd = open(name, O_RDWR);
         if (streamfd < 0) {
-            throw std::runtime_error("failed to open streaming device");
+            throw IOError("failed to open streaming device", errno);
         }
     }
     ~Stream()
@@ -89,7 +90,7 @@ public:
 
 private:
     int have_something_to_read(int timeout);
-    void read_all(void *msg, size_t len);
+    void read_all(const char *operation, void *msg, size_t len);
     void handle_stream_start_stop(size_t len);
     void handle_stream_capabilities(size_t len);
     void handle_stream_error(size_t len);
@@ -348,7 +349,7 @@ int Stream::have_something_to_read(int timeout)
     return 0;
 }
 
-void Stream::read_all(void *msg, size_t len)
+void Stream::read_all(const char *operation, void *msg, size_t len)
 {
     while (len > 0) {
         ssize_t n = read(streamfd, msg, len);
@@ -357,8 +358,7 @@ void Stream::read_all(void *msg, size_t len)
             if (errno == EINTR) {
                 continue;
             }
-            throw std::runtime_error("Reading message from device failed: " +
-                                     std::string(strerror(errno)));
+            throw ReadError("reading message from device failed", operation, errno);
         }
 
         len -= n;
@@ -371,11 +371,10 @@ void Stream::handle_stream_start_stop(size_t len)
     uint8_t msg[256];
 
     if (len >= sizeof(msg)) {
-        throw std::runtime_error("msg size (" + std::to_string(len) + ") is too long "
-                                 "(longer than " + std::to_string(sizeof(msg)) + ")");
+        throw MessageLengthError("stream start/stop", len, sizeof(msg));
     }
 
-    read_all(msg, len);
+    read_all("start/stop command from device", msg, len);
     is_streaming = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            is_streaming ? "START" : "STOP");
@@ -390,10 +389,10 @@ void Stream::handle_stream_capabilities(size_t len)
     uint8_t caps[STREAM_MSG_CAPABILITIES_MAX_BYTES];
 
     if (len > sizeof(caps)) {
-        throw std::runtime_error("capability message too long");
+        throw MessageLengthError("capability", len, sizeof(caps));
     }
 
-    read_all(caps, len);
+    read_all("capabilities from device", caps, len);
     // we currently do not support extensions so just reply so
     send<CapabilitiesMessage>();
 }
@@ -401,9 +400,7 @@ void Stream::handle_stream_capabilities(size_t len)
 void Stream::handle_stream_error(size_t len)
 {
     if (len < sizeof(StreamMsgNotifyError)) {
-        throw std::runtime_error("Received NotifyError message size " + std::to_string(len) +
-                                 " is too small (smaller than " +
-                                 std::to_string(sizeof(StreamMsgNotifyError)) + ")");
+        throw MessageLengthError("NotifyError", len, sizeof(StreamMsgNotifyError));
     }
 
     struct : StreamMsgNotifyError {
@@ -412,15 +409,14 @@ void Stream::handle_stream_error(size_t len)
 
     size_t len_to_read = std::min(len, sizeof(msg) - 1);
 
-    read_all(&msg, len_to_read);
+    read_all("NotifyError message", &msg, len_to_read);
     msg.msg[len_to_read - sizeof(StreamMsgNotifyError)] = '\0';
 
     syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s\n",
-        msg.error_code, msg.msg);
+           msg.error_code, msg.msg);
 
     if (len_to_read < len) {
-        throw std::runtime_error("Received NotifyError message size " + std::to_string(len) +
-                                 " is too big (bigger than " + std::to_string(sizeof(msg)) + ")");
+        throw MessageLengthError("NotifyError", len, sizeof(msg));
     }
 }
 
@@ -432,12 +428,11 @@ void Stream::read_command_from_device()
     std::lock_guard<std::mutex> stream_guard(mutex);
     n = read(streamfd, &hdr, sizeof(hdr));
     if (n != sizeof(hdr)) {
-        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
-                                 " expected " + std::to_string(sizeof(hdr)));
+        throw MessageLengthError("command from device", n, sizeof(hdr), errno);
     }
     if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
-        throw std::runtime_error("BAD VERSION " + std::to_string(hdr.protocol_version) +
-                                 " (expected is " + std::to_string(STREAM_DEVICE_PROTOCOL) + ")");
+        throw MessageDataError("bad protocol version", "command from device",
+                               hdr.protocol_version, STREAM_DEVICE_PROTOCOL);
     }
 
     switch (hdr.type) {
@@ -448,7 +443,8 @@ void Stream::read_command_from_device()
     case STREAM_TYPE_START_STOP:
         return handle_stream_start_stop(hdr.size);
     }
-    throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
+    throw MessageDataError("unknown message type", "command from device",
+                           hdr.type, STREAM_TYPE_START_STOP);
 }
 
 int Stream::read_command(bool blocking)
@@ -539,7 +535,7 @@ void ConcreteAgent::CaptureLoop(Stream &stream, FrameLog &frame_log)
 
         std::unique_ptr<FrameCapture> capture(GetBestFrameCapture(stream.client_codecs()));
         if (!capture) {
-            throw std::runtime_error("cannot find a suitable capture system");
+            throw Error("cannot find a suitable capture system");
         }
 
         while (!quit_requested && stream.streaming_requested()) {
