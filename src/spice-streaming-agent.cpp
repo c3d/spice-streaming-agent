@@ -40,42 +40,6 @@
 
 using namespace spice::streaming_agent;
 
-namespace spice
-{
-namespace streaming_agent
-{
-
-class FormatMessage : public Message<StreamMsgFormat, FormatMessage, STREAM_TYPE_FORMAT>
-{
-public:
-    FormatMessage(unsigned w, unsigned h, uint8_t c) : Message(w, h, c) {}
-    static size_t size(unsigned width, unsigned height, uint8_t codec)
-    {
-        return sizeof(payload_t);
-    }
-    void write_message_body(Stream &stream, unsigned w, unsigned h, uint8_t c)
-    {
-        StreamMsgFormat msg = { .width = w, .height = h, .codec = c, .padding1 = {} };
-        stream.write_all("format", &msg, sizeof(msg));
-    }
-};
-
-class FrameMessage : public Message<StreamMsgData, FrameMessage, STREAM_TYPE_DATA>
-{
-public:
-    FrameMessage(const void *frame, size_t length) : Message(frame, length) {}
-    static size_t size(const void *frame, size_t length)
-    {
-        return sizeof(payload_t) + length;
-    }
-    void write_message_body(Stream &stream, const void *frame, size_t length)
-    {
-        stream.write_all("frame", frame, length);
-    }
-};
-
-}} // namespace spice::streaming_agent
-
 bool quit_requested = false;
 
 static void handle_interrupt(int intr)
@@ -109,72 +73,6 @@ static void usage(const char *progname)
     printf("\t-h or --help     -- print this help message\n");
 
     exit(1);
-}
-
-
-void ConcreteAgent::CaptureLoop(Stream &stream, FrameLog &frame_log)
-{
-    unsigned int frame_count = 0;
-    while (!quit_requested) {
-        while (!quit_requested && !stream.streaming_requested()) {
-            if (stream.read_command(true) < 0) {
-                syslog(LOG_ERR, "FAILED to read command\n");
-                return;
-            }
-        }
-
-        if (quit_requested) {
-            return;
-        }
-
-        syslog(LOG_INFO, "streaming starts now\n");
-        uint64_t time_last = 0;
-
-        std::unique_ptr<FrameCapture> capture(GetBestFrameCapture(stream.client_codecs()));
-        if (!capture) {
-            throw Error("cannot find a suitable capture system");
-        }
-
-        while (!quit_requested && stream.streaming_requested()) {
-            if (++frame_count % 100 == 0) {
-                syslog(LOG_DEBUG, "SENT %d frames\n", frame_count);
-            }
-            uint64_t time_before = get_time();
-
-            FrameInfo frame = capture->CaptureFrame();
-
-            uint64_t time_after = get_time();
-            syslog(LOG_DEBUG,
-                   "got a frame -- size is %zu (%" PRIu64 " ms) "
-                   "(%" PRIu64 " ms from last frame)(%" PRIu64 " us)\n",
-                   frame.buffer_size, (time_after - time_before)/1000,
-                   (time_after - time_last)/1000,
-                   (time_before - time_last));
-            time_last = time_after;
-
-            if (frame.stream_start) {
-                unsigned width, height;
-                uint8_t codec;
-
-                width = frame.size.width;
-                height = frame.size.height;
-                codec = capture->VideoCodecType();
-
-                syslog(LOG_DEBUG, "wXh %uX%u  codec=%u\n", width, height, codec);
-
-                stream.send<FormatMessage>(width, height, codec);
-            }
-            if (frame_log) {
-                frame_log.dump(frame.buffer, frame.buffer_size);
-            }
-            stream.send<FrameMessage>(frame.buffer, frame.buffer_size);
-            //usleep(1);
-            if (stream.read_command(false) < 0) {
-                syslog(LOG_ERR, "FAILED to read command\n");
-                return;
-            }
-        }
-    }
 }
 
 #define arg_error(...) syslog(LOG_ERR, ## __VA_ARGS__);
