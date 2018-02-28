@@ -328,9 +328,9 @@ static void
 send_cursor(unsigned width, unsigned height, int hotspot_x, int hotspot_y,
             std::function<void(uint32_t *)> fill_cursor)
 {
-    if (width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH ||
-        height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT)
+    if (width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH || height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
         return;
+    }
 
     size_t cursor_size =
         sizeof(StreamDevHeader) + sizeof(StreamMsgCursorSet) +
@@ -366,15 +366,18 @@ static void cursor_changes(Display *display, int event_base)
     while (1) {
         XEvent event;
         XNextEvent(display, &event);
-        if (event.type != event_base + 1)
+        if (event.type != event_base + 1) {
             continue;
+        }
 
         XFixesCursorImage *cursor = XFixesGetCursorImage(display);
-        if (!cursor)
+        if (!cursor) {
             continue;
+        }
 
-        if (cursor->cursor_serial == last_serial)
+        if (cursor->cursor_serial == last_serial) {
             continue;
+        }
 
         last_serial = cursor->cursor_serial;
         auto fill_cursor = [cursor](uint32_t *pixels) {
@@ -389,10 +392,11 @@ static void
 do_capture(const char *streamport, FILE *f_log)
 {
     streamfd = open(streamport, O_RDWR);
-    if (streamfd < 0)
+    if (streamfd < 0) {
         throw std::runtime_error("failed to open the streaming device (" +
                                  std::string(streamport) + "): "
                                  + strerror(errno));
+    }
 
     unsigned int frame_count = 0;
     while (!quit_requested) {
@@ -411,8 +415,9 @@ do_capture(const char *streamport, FILE *f_log)
         uint64_t time_last = 0;
 
         std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture(client_codecs));
-        if (!capture)
+        if (!capture) {
             throw std::runtime_error("cannot find a suitable capture system");
+        }
 
         while (!quit_requested && streaming_requested) {
             if (++frame_count % 100 == 0) {
@@ -441,8 +446,9 @@ do_capture(const char *streamport, FILE *f_log)
 
                 syslog(LOG_DEBUG, "wXh %uX%u  codec=%u\n", width, height, codec);
 
-                if (spice_stream_send_format(width, height, codec) == EXIT_FAILURE)
+                if (spice_stream_send_format(width, height, codec) == EXIT_FAILURE) {
                     throw std::runtime_error("FAILED to send format message");
+                }
             }
             if (f_log) {
                 if (log_binary) {
