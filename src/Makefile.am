@@ -59,6 +59,8 @@ spice_streaming_agent_SOURCES = \
 	jpeg.hpp \
 	stream.cpp \
 	stream.hpp \
+	frame-log.hpp \
+	frame-log.cpp \
 	errors.cpp \
 	x11-cursor.hpp \
 	x11-cursor.cpp \
