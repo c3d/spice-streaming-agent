@@ -14,7 +14,7 @@ namespace spice {
 namespace streaming_agent {
 
 /* returns current time in micro-seconds */
-static uint64_t get_time(void)
+static inline uint64_t get_time(void)
 {
     struct timeval now;
 
