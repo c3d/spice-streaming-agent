@@ -7,8 +7,8 @@
 #include "concrete-agent.hpp"
 #include "stream.hpp"
 #include "message.hpp"
+#include "frame-log.hpp"
 #include "x11-cursor.hpp"
-#include "hexdump.h"
 #include "mjpeg-fallback.hpp"
 
 #include <spice/stream-device.h>
@@ -45,17 +45,6 @@ namespace spice
 namespace streaming_agent
 {
 
-/* returns current time in micro-seconds */
-static uint64_t get_time(void)
-{
-    struct timeval now;
-
-    gettimeofday(&now, NULL);
-
-    return (uint64_t)now.tv_sec * 1000000 + (uint64_t)now.tv_usec;
-
-}
-
 class FormatMessage : public Message<StreamMsgFormat, FormatMessage, STREAM_TYPE_FORMAT>
 {
 public:
@@ -84,46 +73,6 @@ public:
         stream.write_all("frame", frame, length);
     }
 };
-
-class FrameLog
-{
-public:
-    FrameLog(const char *filename, bool binary = false);
-    ~FrameLog();
-
-    operator bool() { return log != NULL; }
-    void dump(const void *buffer, size_t length);
-
-private:
-    FILE *log;
-    bool binary;
-};
-
-
-FrameLog::FrameLog(const char *filename, bool binary)
-    : log(filename ? fopen(filename, "wb") : NULL), binary(binary)
-{
-    if (filename && !log) {
-        // We do not abort the program in that case, it's only a warning
-        syslog(LOG_WARNING, "Failed to open hexdump log file '%s': %m\n", filename);
-    }
-}
-
-FrameLog::~FrameLog()
-{
-    if (log)
-        fclose(log);
-}
-
-void FrameLog::dump(const void *buffer, size_t length)
-{
-    if (binary) {
-        fwrite(buffer, length, 1, log);
-    } else {
-        fprintf(log, "%" PRIu64 ": Frame of %zu bytes:\n", get_time(), length);
-        hexdump(buffer, length, log);
-    }
-}
 
 }} // namespace spice::streaming_agent
 
