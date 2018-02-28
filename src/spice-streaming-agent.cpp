@@ -297,9 +297,7 @@ static void handle_interrupt(int intr)
 
 static void register_interrupts(void)
 {
-    struct sigaction sa;
-
-    memset(&sa, 0, sizeof(sa));
+    struct sigaction sa = { };
     sa.sa_handler = handle_interrupt;
     if ((sigaction(SIGINT, &sa, NULL) != 0) &&
         (sigaction(SIGTERM, &sa, NULL) != 0)) {
