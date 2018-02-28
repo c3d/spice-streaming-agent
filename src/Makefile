@@ -16,6 +16,7 @@ SOURCES=	spice-streaming-agent.cpp 				\
 		jpeg.cpp						\
 		errors.cpp						\
 		stream.cpp						\
+		frame-log.cpp						\
 		x11-cursor.cpp						\
 		hexdump.c
 
