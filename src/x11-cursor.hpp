@@ -81,6 +81,7 @@ class X11CursorThread
 {
 public:
     X11CursorThread(Stream &stream);
+    ~X11CursorThread();
     static void record_cursor_changes(X11CursorThread *self) { self->updater.send_cursor_changes(); }
 
 private:

@@ -164,6 +164,6 @@ protected:
 
 }} // namespace spice::streaming_agent
 
-extern bool quit_requested;
+extern volatile bool quit_requested;
 
 #endif // SPICE_STREAMING_AGENT_ERRORS_HPP

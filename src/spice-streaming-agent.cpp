@@ -40,7 +40,7 @@
 
 using namespace spice::streaming_agent;
 
-bool quit_requested = false;
+volatile bool quit_requested = false;
 
 static void handle_interrupt(int intr)
 {
