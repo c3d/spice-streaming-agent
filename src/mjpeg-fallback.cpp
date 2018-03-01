@@ -165,8 +165,6 @@ void MjpegPlugin::ParseOptions(const ConfigureOption *options)
             } catch (const std::exception &e) {
                 throw std::runtime_error("Invalid value '" + value + "' for option 'mjpeg.quality'.");
             }
-        } else {
-            throw std::runtime_error("Invalid option '" + name + "'.");
         }
     }
 }

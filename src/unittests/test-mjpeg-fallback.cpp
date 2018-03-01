@@ -32,10 +32,9 @@ SCENARIO("test parsing mjpeg plugin options", "[mjpeg][options]") {
                 {NULL, NULL}
             };
 
-            THEN("ParseOptions throws an exception") {
-                REQUIRE_THROWS_WITH(
-                    plugin.ParseOptions(options.data()),
-                    "Invalid option 'wakaka'."
+            THEN("ParseOptions should ignore the option") {
+                REQUIRE_NOTHROW(
+                    plugin.ParseOptions(options.data())
                 );
             }
         }
