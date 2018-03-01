@@ -69,7 +69,7 @@ fi
 AC_MSG_RESULT($have_gcc4)
 AC_SUBST(VISIBILITY_HIDDEN_CFLAGS)
 
-AC_DEFINE_DIR([BINDIR], [bindir], [Where data are placed to.])
+AC_DEFINE_DIR([BINDIR], [bindir], [Where binaries are installed.])
 
 AC_OUTPUT([
 spice-streaming-agent.spec
