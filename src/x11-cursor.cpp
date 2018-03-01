@@ -4,6 +4,9 @@
  * Copyright 2018 Red Hat Inc. All rights reserved.
  */
 #include "x11-cursor.hpp"
+#include "concrete-agent.hpp"
+
+#include <spice-streaming-agent/errors.hpp>
 
 #include <syslog.h>
 
@@ -38,7 +41,7 @@ void X11CursorUpdater::send_cursor_changes()
     Window rootwindow = DefaultRootWindow(display);
     XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
 
-    while (true) {
+    while (!ConcreteAgent::quit_requested) {
         XEvent event;
         XNextEvent(display, &event);
         if (event.type != event_base + 1) {
