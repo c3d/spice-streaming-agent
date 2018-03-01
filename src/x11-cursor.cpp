@@ -5,6 +5,8 @@
  */
 #include "x11-cursor.hpp"
 
+#include <spice-streaming-agent/errors.hpp>
+
 #include <syslog.h>
 
 namespace spice
@@ -38,7 +40,7 @@ void X11CursorUpdater::send_cursor_changes()
     Window rootwindow = DefaultRootWindow(display);
     XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
 
-    while (true) {
+    while (quit_requested) {
         XEvent event;
         XNextEvent(display, &event);
         if (event.type != event_base + 1) {
