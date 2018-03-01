@@ -61,8 +61,13 @@ void X11CursorUpdater::send_cursor_changes()
 X11CursorThread::X11CursorThread(Stream &stream)
     : updater(stream),
       thread(record_cursor_changes, this)
+{}
+
+
+X11CursorThread::~X11CursorThread()
 {
-    thread.detach();
+    ConcreteAgent::request_quit();
+    thread.join();
 }
 
 }} // namespace spic::streaming_agent
