@@ -31,7 +31,7 @@ agent plugins.
 %setup -q
 
 %build
-%configure
+%configure --enable-tests
 make %{?_smp_mflags} V=1
 
 %check

@@ -4,7 +4,10 @@
 # Copyright 2016-2017 Red Hat Inc. All rights reserved.
 
 NULL =
+
+if ENABLE_TESTS
 SUBDIRS = . unittests
+endif
 
 AM_CPPFLAGS = \
 	-DSPICE_STREAMING_AGENT_PROGRAM \

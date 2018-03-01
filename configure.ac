@@ -38,8 +38,6 @@ PKG_CHECK_MODULES(XFIXES, xfixes)
 
 PKG_CHECK_MODULES(JPEG, libjpeg)
 
-AC_CHECK_HEADER([catch/catch.hpp],,[AC_MSG_ERROR([Could not find Catch dependency header (catch/catch.hpp)])])
-
 dnl ===========================================================================
 dnl check compiler flags
 
@@ -68,6 +66,25 @@ if test "x$have_gcc4" = "xyes" && test ! "$os_win32" = "yes" ; then
 fi
 AC_MSG_RESULT($have_gcc4)
 AC_SUBST(VISIBILITY_HIDDEN_CFLAGS)
+
+dnl =========================================================================
+dnl tests
+AC_ARG_ENABLE([tests],
+              AS_HELP_STRING([--enable-tests=@<:@yes/no@:>@],
+                             [Enable tests (they require 'catch' to be installed) @<:@default=auto@:>@]),
+                             [],
+                             [enable_tests="auto"])
+case "$enable_tests" in
+  0|no) enable_tests="no" ;;
+  1|yes) enable_tests="yes" ;;
+  auto) enable_tests="auto" ;;
+  *) AC_MSG_ERROR([bad value ${enable_tests} for enable-tests option]) ;;
+esac
+AS_IF([test "x$enable_tests" != "xno"],
+      [AC_CHECK_HEADER([catch/catch.hpp],have_check="yes",)])
+AS_IF([test "x$enable_tests" = "xyes" && test "x$have_check" != "xyes"],
+      [AC_MSG_ERROR([Could not find Catch dependency header (catch/catch.hpp)])])
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$have_check" = "xyes"])
 
 AC_DEFINE_DIR([BINDIR], [bindir], [Where binaries are installed.])
 
