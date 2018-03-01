@@ -6,11 +6,11 @@ SUBDIRS = \
 
 # this will start the program for each user session
 xdgautostartdir = $(sysconfdir)/xdg/autostart
-xdgautostart_DATA = $(srcdir)/data/spice-streaming.desktop
+xdgautostart_DATA = $(builddir)/data/spice-streaming.desktop
 
 # this will start the program for the login session
 gdmautostartdir = $(datadir)/gdm/greeter/autostart
-gdmautostart_DATA = $(srcdir)/data/spice-streaming.desktop
+gdmautostart_DATA = $(builddir)/data/spice-streaming.desktop
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = spice-streaming-agent.pc
