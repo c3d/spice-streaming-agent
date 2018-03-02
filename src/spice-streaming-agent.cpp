@@ -134,6 +134,9 @@ int main(int argc, char* argv[])
         X11CursorThread cursor_thread(stream);
         agent.CaptureLoop(stream, frame_log);
     }
+    catch (QuitRequested &quit) {
+        syslog(LOG_INFO, "quit requested (interrupted)");
+    }
     catch (Error &err) {
         err.syslog();
         ret = EXIT_FAILURE;

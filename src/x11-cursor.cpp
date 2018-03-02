@@ -41,20 +41,46 @@ void X11CursorUpdater::send_cursor_changes()
     Window rootwindow = DefaultRootWindow(display);
     XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
 
-    while (!ConcreteAgent::quit_requested) {
-        XEvent event;
-        XNextEvent(display, &event);
-        if (event.type != event_base + 1) {
-            continue;
-        }
+    try {
+        int x11_fd = ConnectionNumber(display);
+        struct timeval delay;
+        delay.tv_usec = 500000;
+        delay.tv_sec = 0;
 
-        XFixesCursorImage *cursor = XFixesGetCursorImage(display);
-        if (!cursor || cursor->cursor_serial == last_serial) {
-            continue;
-        }
+        fd_set in_fds;
+        FD_ZERO(&in_fds);
+        FD_SET(x11_fd, &in_fds);
 
-        last_serial = cursor->cursor_serial;
-        stream.send<X11CursorMessage>(cursor);
+        while (!ConcreteAgent::quit_requested()) {
+            // Wait for an X11 event or for a 0.5s timeout in case of quit_requested
+
+            // Wait for X Event or a Timer
+            if (!select(x11_fd+1, &in_fds, 0, 0, &delay)) {
+                // Timeout, loop
+                continue;
+            }
+
+            XEvent event;
+            XNextEvent(display, &event);
+            if (event.type != event_base + 1) {
+                continue;
+            }
+
+            XFixesCursorImage *cursor = XFixesGetCursorImage(display);
+            if (!cursor || cursor->cursor_serial == last_serial) {
+                continue;
+            }
+
+            last_serial = cursor->cursor_serial;
+            stream.send<X11CursorMessage>(cursor);
+        }
+    }
+    catch (QuitRequested &quit) {
+        syslog(LOG_INFO, "X11 cursor thread received request to quit, exiting");
+    }
+    catch (Error &err) {
+        syslog(LOG_ERR, "Got an exception in X11 cursor thread, exiting");
+        err.syslog();
     }
 }
 
@@ -66,8 +92,10 @@ X11CursorThread::X11CursorThread(Stream &stream)
 
 X11CursorThread::~X11CursorThread()
 {
+    syslog(LOG_INFO, "X11 cursor thread must join (quitting)");
     ConcreteAgent::request_quit();
     thread.join();
+    syslog(LOG_INFO, "X11 cursor thread joined");
 }
 
 }} // namespace spic::streaming_agent

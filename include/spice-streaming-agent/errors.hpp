@@ -185,6 +185,14 @@ protected:
     const char *value;
 };
 
+/*! Exception thrown if interrupted by SIGINT/SIGTERM during system call */
+class QuitRequested : public Error
+{
+public:
+    /*! Abort current I/O operation and quit */
+    QuitRequested() : Error("quit requested") {}
+};
+
 }} // namespace spice::streaming_agent
 
 #endif // SPICE_STREAMING_AGENT_ERRORS_HPP

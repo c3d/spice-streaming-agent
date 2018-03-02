@@ -163,15 +163,12 @@ public:
 void ConcreteAgent::CaptureLoop(Stream &stream, FrameLog &frame_log)
 {
     unsigned int frame_count = 0;
-    while (!quit_requested) {
-        while (!quit_requested && !stream.streaming_requested()) {
-            if (stream.read_command(true) < 0) {
-                syslog(LOG_ERR, "FAILED to read command\n");
-                return;
-            }
+    while (!quit_requested()) {
+        while (!quit_requested() && !stream.streaming_requested()) {
+            stream.read_command(true);
         }
 
-        if (quit_requested) {
+        if (quit_requested()) {
             return;
         }
 
@@ -183,7 +180,7 @@ void ConcreteAgent::CaptureLoop(Stream &stream, FrameLog &frame_log)
             throw Error("cannot find a suitable capture system");
         }
 
-        while (!quit_requested && stream.streaming_requested()) {
+        while (!quit_requested() && stream.streaming_requested()) {
             if (++frame_count % 100 == 0) {
                 syslog(LOG_DEBUG, "SENT %d frames\n", frame_count);
             }
@@ -215,10 +212,7 @@ void ConcreteAgent::CaptureLoop(Stream &stream, FrameLog &frame_log)
             frame_log.dump(frame.buffer, frame.buffer_size);
             stream.send<FrameMessage>(frame.buffer, frame.buffer_size);
             //usleep(1);
-            if (stream.read_command(false) < 0) {
-                syslog(LOG_ERR, "FAILED to read command\n");
-                return;
-            }
+            stream.read_command(false);
         }
     }
 }
@@ -238,5 +232,13 @@ void ConcreteAgent::register_interrupts()
     if ((sigaction(SIGINT, &sa, NULL) != 0) &&
         (sigaction(SIGTERM, &sa, NULL) != 0)) {
         syslog(LOG_WARNING, "failed to register signal handler %m");
+    }
+}
+
+void ConcreteAgent::check_if_quitting()
+{
+    if (quit_requested()) {
+        syslog(LOG_INFO, "quit was requested, throwing QuitRequested");
+        throw QuitRequested();
     }
 }

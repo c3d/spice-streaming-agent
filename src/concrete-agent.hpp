@@ -47,6 +47,7 @@ public:
     static void register_interrupts();
     static bool quit_requested() { return must_quit; }
     static void request_quit() { must_quit = true; }
+    static void check_if_quitting();
 private:
     void LoadPlugin(const std::string &plugin_filename);
     static void handle_interrupt(int intr);

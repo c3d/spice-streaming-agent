@@ -35,7 +35,7 @@ public:
         message.write_message_body(*this, payload_args...);
     }
 
-    int read_command(bool blocking);
+    void read_command(bool blocking);
     void write_all(const char *operation, const void *buf, const size_t len);
 
 private:

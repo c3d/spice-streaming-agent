@@ -58,8 +58,8 @@ int Stream::have_something_to_read(int timeout)
     struct pollfd pollfd = {streamfd, POLLIN, 0};
 
     if (poll(&pollfd, 1, timeout) < 0) {
-        syslog(LOG_ERR, "poll FAILED\n");
-        return -1;
+        ConcreteAgent::check_if_quitting();
+        throw IOError("poll failed", errno);
     }
 
     if (pollfd.revents == POLLIN) {
@@ -73,7 +73,7 @@ void Stream::read_all(const char *operation, void *msg, size_t len)
 {
     while (len > 0) {
         ssize_t n = read(streamfd, msg, len);
-
+        ConcreteAgent::check_if_quitting();
         if (n < 0) {
             if (errno == EINTR) {
                 continue;
@@ -167,13 +167,13 @@ void Stream::read_command_from_device()
                            hdr.type, STREAM_TYPE_START_STOP);
 }
 
-int Stream::read_command(bool blocking)
+void Stream::read_command(bool blocking)
 {
     int timeout = blocking?-1:0;
     while (!ConcreteAgent::quit_requested()) {
         if (!have_something_to_read(timeout)) {
             if (!blocking) {
-                return 0;
+                return;
             }
             sleep(1);
             continue;
@@ -181,8 +181,6 @@ int Stream::read_command(bool blocking)
         read_command_from_device();
         break;
     }
-
-    return 1;
 }
 
 void Stream::write_all(const char *operation, const void *buf, const size_t len)
@@ -190,6 +188,7 @@ void Stream::write_all(const char *operation, const void *buf, const size_t len)
     size_t written = 0;
     while (written < len) {
         int l = write(streamfd, (const char *) buf + written, len - written);
+        ConcreteAgent::check_if_quitting();
         if (l < 0) {
             if (errno == EINTR) {
                 continue;
