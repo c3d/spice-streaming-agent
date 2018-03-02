@@ -23,6 +23,7 @@ AM_CFLAGS = \
 	$(NULL)
 
 AM_CXXFLAGS = \
+	-export-dynamic \
 	$(WARN_CXXFLAGS) \
 	$(NULL)
 
