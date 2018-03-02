@@ -88,6 +88,10 @@ AC_DEFUN([SPICE_COMPILE_WARNINGS],[
     dontwarn="$dontwarn -Wstrict-prototypes"
     dontwarn="$dontwarn -Wmissing-field-initializers"
 
+    # Do not kill a build if you can't devirtualize some method
+    # (the warning is most often wrong anyway)
+    dontwarn="$dontwarn -Wsuggest-final-types"
+
     # We want to enable these, but need to sort out the
     # decl mess with  gtk/generated_*.c
     dontwarn="$dontwarn -Wmissing-declarations"
