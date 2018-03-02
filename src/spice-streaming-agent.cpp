@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <syslog.h>
-#include <signal.h>
 #include <exception>
 #include <stdexcept>
 #include <memory>
@@ -40,24 +39,6 @@
 #include <functional>
 
 using namespace spice::streaming_agent;
-
-bool quit_requested = false;
-
-static void handle_interrupt(int intr)
-{
-    syslog(LOG_INFO, "Got signal %d, exiting", intr);
-    quit_requested = true;
-}
-
-static void register_interrupts(void)
-{
-    struct sigaction sa = { };
-    sa.sa_handler = handle_interrupt;
-    if ((sigaction(SIGINT, &sa, NULL) != 0) &&
-        (sigaction(SIGTERM, &sa, NULL) != 0)) {
-        syslog(LOG_WARNING, "failed to register signal handler %m");
-    }
-}
 
 static void usage(const char *progname)
 {
@@ -141,7 +122,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    register_interrupts();
+    agent.register_interrupts();
 
     int ret = EXIT_SUCCESS;
     try {

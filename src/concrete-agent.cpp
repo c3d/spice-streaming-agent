@@ -18,6 +18,7 @@
 #include <glob.h>
 #include <dlfcn.h>
 #include <inttypes.h>
+#include <signal.h>
 #include <string>
 
 using namespace spice::streaming_agent;
@@ -219,5 +220,23 @@ void ConcreteAgent::CaptureLoop(Stream &stream, FrameLog &frame_log)
                 return;
             }
         }
+    }
+}
+
+std::atomic<bool> ConcreteAgent::must_quit;
+
+void ConcreteAgent::handle_interrupt(int intr)
+{
+    syslog(LOG_INFO, "Got signal %d, exiting", intr);
+    request_quit();
+}
+
+void ConcreteAgent::register_interrupts()
+{
+    struct sigaction sa = { };
+    sa.sa_handler = handle_interrupt;
+    if ((sigaction(SIGINT, &sa, NULL) != 0) &&
+        (sigaction(SIGTERM, &sa, NULL) != 0)) {
+        syslog(LOG_WARNING, "failed to register signal handler %m");
     }
 }

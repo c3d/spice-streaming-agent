@@ -6,6 +6,7 @@
 
 #include "stream.hpp"
 #include "message.hpp"
+#include "concrete-agent.hpp"
 
 #include <spice/stream-device.h>
 
@@ -169,7 +170,7 @@ void Stream::read_command_from_device()
 int Stream::read_command(bool blocking)
 {
     int timeout = blocking?-1:0;
-    while (!quit_requested) {
+    while (!ConcreteAgent::quit_requested()) {
         if (!have_something_to_read(timeout)) {
             if (!blocking) {
                 return 0;

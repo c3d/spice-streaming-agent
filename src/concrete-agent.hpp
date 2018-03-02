@@ -9,6 +9,8 @@
 #include <vector>
 #include <set>
 #include <memory>
+#include <atomic>
+
 #include <spice-streaming-agent/plugin.hpp>
 
 namespace spice {
@@ -41,10 +43,18 @@ public:
     void AddOption(const char *name, const char *value);
     FrameCapture *GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs);
     bool PluginVersionIsCompatible(unsigned pluginVersion) const override;
+    // TODO: Move these to the Agent interface for use by plugins
+    static void register_interrupts();
+    static bool quit_requested() { return must_quit; }
+    static void request_quit() { must_quit = true; }
 private:
     void LoadPlugin(const std::string &plugin_filename);
+    static void handle_interrupt(int intr);
+    static std::atomic<bool> must_quit;
     std::vector<std::shared_ptr<Plugin>> plugins;
     std::vector<ConcreteConfigureOption> options;
+
+
 };
 
 }} // namespace spice::streaming_agent
