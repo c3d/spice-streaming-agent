@@ -126,7 +126,7 @@ static void handle_stream_error(size_t len)
                                  std::to_string(sizeof(StreamMsgNotifyError)) + ")");
     }
 
-    struct : StreamMsgNotifyError {
+    struct StreamMsgNotifyError1K : StreamMsgNotifyError {
         uint8_t msg[1024];
     } msg;
 
