@@ -130,10 +130,10 @@ FrameCapture *ConcreteAgent::GetBestFrameCapture(const std::set<SpiceVideoCodecT
     return nullptr;
 }
 
-class FormatMessage : public Message<StreamMsgFormat, FormatMessage, STREAM_TYPE_FORMAT>
+class FormatMessage : public OutMessage<StreamMsgFormat, FormatMessage, STREAM_TYPE_FORMAT>
 {
 public:
-    FormatMessage(unsigned w, unsigned h, uint8_t c) : Message(w, h, c) {}
+    FormatMessage(unsigned w, unsigned h, uint8_t c) : OutMessage(w, h, c) {}
     static size_t size(unsigned width, unsigned height, uint8_t codec)
     {
         return sizeof(MessagePayload);
@@ -145,10 +145,10 @@ public:
     }
 };
 
-class FrameMessage : public Message<StreamMsgData, FrameMessage, STREAM_TYPE_DATA>
+class FrameMessage : public OutMessage<StreamMsgData, FrameMessage, STREAM_TYPE_DATA>
 {
 public:
-    FrameMessage(const void *frame, size_t length) : Message(frame, length) {}
+    FrameMessage(const void *frame, size_t length) : OutMessage(frame, length) {}
     static size_t size(const void *frame, size_t length)
     {
         return sizeof(MessagePayload) + length;

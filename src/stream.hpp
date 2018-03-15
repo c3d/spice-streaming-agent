@@ -15,6 +15,8 @@
 namespace spice {
 namespace streaming_agent {
 
+template <typename Payload> class InMessage;
+
 class Stream
 {
     typedef std::set<SpiceVideoCodecType> CodecSet;
@@ -26,24 +28,31 @@ public:
     const CodecSet &client_codecs() const { return codecs; }
     bool streaming_requested() const { return is_streaming; }
 
-    template <typename Message, typename ...PayloadArgs>
+    template <typename OutMessage, typename ...PayloadArgs>
     void send(PayloadArgs... payload_args)
     {
-        Message message(payload_args...);
+        OutMessage message(payload_args...);
         std::lock_guard<std::mutex> stream_guard(mutex);
         message.write_header(*this);
         message.write_message_body(*this, payload_args...);
     }
 
+    template <typename Payload>
+    void handle(size_t size, const char *operation)
+    {
+        InMessage<Payload> message(*this, size, operation);
+        handle(message.payload());
+    }
+
+    template <typename Payload>
+    void handle(Payload &payload);
+
     void read_command(bool blocking);
-    void write_all(const char *operation, const void *buf, const size_t len);
+    void write_all(const char *operation, const void *buf, size_t len);
+    void read_all(const char *operation, void *msg, size_t len);
 
 private:
-    int have_something_to_read(int timeout);
-    void read_all(const char *operation, void *msg, size_t len);
-    void handle_stream_start_stop(size_t len);
-    void handle_stream_capabilities(size_t len);
-    void handle_stream_error(size_t len);
+    int  have_something_to_read(int timeout);
     void read_command_from_device();
 
 private:

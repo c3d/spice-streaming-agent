@@ -17,11 +17,11 @@
 namespace spice {
 namespace streaming_agent {
 
-class X11CursorMessage : public Message<StreamMsgCursorSet, X11CursorMessage,
-                                        STREAM_TYPE_CURSOR_SET>
+class X11CursorMessage : public OutMessage<StreamMsgCursorSet, X11CursorMessage,
+                                           STREAM_TYPE_CURSOR_SET>
 {
 public:
-    X11CursorMessage(XFixesCursorImage *cursor): Message(cursor) {}
+    X11CursorMessage(XFixesCursorImage *cursor): OutMessage(cursor) {}
     static size_t size(XFixesCursorImage *cursor)
     {
         return sizeof(MessagePayload) + sizeof(uint32_t) * pixel_count(cursor);

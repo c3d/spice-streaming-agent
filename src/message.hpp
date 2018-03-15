@@ -9,6 +9,7 @@
 #include "stream.hpp"
 
 #include <spice/stream-device.h>
+#include <vector>
 
 namespace spice
 {
@@ -16,14 +17,14 @@ namespace streaming_agent
 {
 
 template <typename Payload, typename Info, unsigned Type>
-class Message
+class OutMessage
 {
 public:
     template <typename ...PayloadArgs>
-    Message(PayloadArgs... payload_args)
+    OutMessage(PayloadArgs... payload_args)
         : hdr(StreamDevHeader {
               .protocol_version = STREAM_DEVICE_PROTOCOL,
-              .padding = 0,     // Workaround GCC bug "sorry: not implemented"
+              .padding = 0, // Required by C++ (unlike C99)
               .type = Type,
               .size = (uint32_t) Info::size(payload_args...)
           })
@@ -36,6 +37,29 @@ public:
 protected:
     StreamDevHeader hdr;
     typedef Payload MessagePayload;
+};
+
+
+template <typename Payload>
+class InMessage
+{
+    typedef std::vector<uint8_t> Storage;
+
+public:
+    InMessage(Stream &stream, size_t size, const char *operation)
+        : bytes(size)
+    {
+        bytes.resize(size);
+        stream.read_all(operation, &bytes[0], size);
+    }
+
+    Payload &payload()
+    {
+        return *reinterpret_cast<Payload *> (bytes.data());
+    }
+
+private:
+    Storage bytes;
 };
 
 }} // namespace spice::streaming_agent

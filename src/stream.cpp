@@ -24,11 +24,11 @@ namespace spice
 namespace streaming_agent
 {
 
-class CapabilitiesMessage : public Message<StreamMsgData, CapabilitiesMessage,
-                                           STREAM_TYPE_CAPABILITIES>
+class CapabilitiesMessage : public OutMessage<StreamMsgData, CapabilitiesMessage,
+                                              STREAM_TYPE_CAPABILITIES>
 {
 public:
-    CapabilitiesMessage() : Message() {}
+    CapabilitiesMessage() : OutMessage() {}
     static size_t size()
     {
         return sizeof(MessagePayload);
@@ -86,83 +86,76 @@ void Stream::read_all(const char *operation, void *msg, size_t len)
     }
 }
 
-void Stream::handle_stream_start_stop(size_t len)
+void Stream::write_all(const char *operation, const void *buf, size_t len)
 {
-    uint8_t msg[256];
-
-    if (len >= sizeof(msg)) {
-        throw MessageLengthError("stream start/stop", len, sizeof(msg));
+    size_t written = 0;
+    while (written < len) {
+        int l = write(streamfd, (const char *) buf + written, len - written);
+        ConcreteAgent::check_if_quitting();
+        if (l < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            throw WriteError("write failed", operation, errno).syslog();
+        }
+        written += l;
     }
+    syslog(LOG_DEBUG, "write_all -- %zu bytes written\n", written);
+}
 
-    read_all("start/stop command from device", msg, len);
-    is_streaming = (msg[0] != 0); /* num_codecs */
+template<>
+void Stream::handle<StreamMsgStartStop>(StreamMsgStartStop &msg)
+{
+    is_streaming = (msg.num_codecs != 0);
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            is_streaming ? "START" : "STOP");
     codecs.clear();
-    for (int i = 1; i <= msg[0]; ++i) {
-        codecs.insert((SpiceVideoCodecType) msg[i]);
+    uint8_t *codecs_ptr = msg.codecs;
+    for (int i = 0; i < msg.num_codecs; ++i) {
+        codecs.insert((SpiceVideoCodecType) codecs_ptr[i]);
     }
 }
 
-void Stream::handle_stream_capabilities(size_t len)
+template<>
+void Stream::handle<StreamMsgCapabilities>(StreamMsgCapabilities &msg)
 {
-    uint8_t caps[STREAM_MSG_CAPABILITIES_MAX_BYTES];
-
-    if (len > sizeof(caps)) {
-        throw MessageLengthError("capability", len, sizeof(caps));
-    }
-
-    read_all("capabilities from device", caps, len);
-    // we currently do not support extensions so just reply so
     send<CapabilitiesMessage>();
 }
 
-void Stream::handle_stream_error(size_t len)
+template<>
+void Stream::handle<StreamMsgNotifyError>(size_t size, const char *operation)
 {
-    if (len < sizeof(StreamMsgNotifyError)) {
-        throw MessageLengthError("NotifyError", len, sizeof(StreamMsgNotifyError));
-    }
-
-    struct : StreamMsgNotifyError {
-        uint8_t msg[1024];
-    } msg;
-
-    size_t len_to_read = std::min(len, sizeof(msg) - 1);
-
-    read_all("NotifyError message", &msg, len_to_read);
-    msg.msg[len_to_read - sizeof(StreamMsgNotifyError)] = '\0';
-
-    syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s\n",
-           msg.error_code, msg.msg);
-
-    if (len_to_read < len) {
-        throw MessageLengthError("NotifyError", len, sizeof(msg));
-    }
+    InMessage<StreamMsgNotifyError> message(*this, size, operation);
+    StreamMsgNotifyError &msg = message.payload();
+    int text_length = int(size - sizeof(StreamMsgNotifyError));
+    syslog(LOG_ERR, "Received NotifyError message from the server: %d - %.*s\n",
+           msg.error_code, text_length, msg.msg);
 }
 
 void Stream::read_command_from_device()
 {
     StreamDevHeader hdr;
-    int n;
-
     std::lock_guard<std::mutex> stream_guard(mutex);
-    n = read(streamfd, &hdr, sizeof(hdr));
-    if (n != sizeof(hdr)) {
-        throw MessageLengthError("command from device", n, sizeof(hdr), errno);
-    }
+    read_all("command", &hdr, sizeof(hdr));
     if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
         throw MessageDataError("bad protocol version", "command from device",
                                hdr.protocol_version, STREAM_DEVICE_PROTOCOL);
     }
 
+    const size_t max_reasonable_message_size = 1024 * 1024;
+    if (hdr.size >= max_reasonable_message_size) {
+        throw MessageLengthError("incoming command", hdr.size, max_reasonable_message_size);
+    }
+
     switch (hdr.type) {
     case STREAM_TYPE_CAPABILITIES:
-        return handle_stream_capabilities(hdr.size);
+        return handle<StreamMsgStartStop>(hdr.size, "capabilities");
     case STREAM_TYPE_NOTIFY_ERROR:
-        return handle_stream_error(hdr.size);
+        return handle<StreamMsgNotifyError>(hdr.size, "error notification");
     case STREAM_TYPE_START_STOP:
-        return handle_stream_start_stop(hdr.size);
+        return handle<StreamMsgStartStop>(hdr.size, "start/stop");
     }
+
     throw MessageDataError("unknown message type", "command from device",
                            hdr.type, STREAM_TYPE_START_STOP);
 }
@@ -181,23 +174,6 @@ void Stream::read_command(bool blocking)
         read_command_from_device();
         break;
     }
-}
-
-void Stream::write_all(const char *operation, const void *buf, const size_t len)
-{
-    size_t written = 0;
-    while (written < len) {
-        int l = write(streamfd, (const char *) buf + written, len - written);
-        ConcreteAgent::check_if_quitting();
-        if (l < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            throw WriteError("write failed", operation, errno).syslog();
-        }
-        written += l;
-    }
-    syslog(LOG_DEBUG, "write_all -- %zu bytes written\n", written);
 }
 
 }} // namespace spice::streaming_agent
