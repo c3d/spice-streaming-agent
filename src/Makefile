@@ -12,6 +12,10 @@ CONFIG=		libpthread						\
 
 SOURCES=	spice-streaming-agent.cpp 				\
 		concrete-agent.cpp					\
+		stream.cpp						\
+		frame-log.cpp						\
+		errors.cpp						\
+		x11-cursor.cpp						\
 		mjpeg-fallback.cpp					\
 		jpeg.cpp						\
 		hexdump.c
