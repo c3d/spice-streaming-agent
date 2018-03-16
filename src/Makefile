@@ -27,5 +27,6 @@ DEFINES=	SPICE_STREAMING_AGENT_PROGRAM				\
 
 LDFLAGS_EXTRA=	$(LDFLAGS_$(OS_NAME))
 LDFLAGS_macosx=	-L/usr/X11/lib
+CXXFLAGS+=-export-dynamic
 
 include $(BUILD)rules.mk
