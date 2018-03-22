@@ -1,2 +1,2 @@
-ACTION=="add", SUBSYSTEM=="virtio-ports", ENV{DEVLINKS}=="/dev/virtio-ports/com.redhat.stream.0", MODE="0666"
+ACTION=="add", SUBSYSTEM=="virtio-ports", ENV{DEVLINKS}=="/dev/virtio-ports/org.spice-space.stream.0", MODE="0666"
 

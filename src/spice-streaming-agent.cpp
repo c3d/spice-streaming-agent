@@ -480,7 +480,7 @@ done:
 
 int main(int argc, char* argv[])
 {
-    const char *streamport = "/dev/virtio-ports/com.redhat.stream.0";
+    const char *streamport = "/dev/virtio-ports/org.spice-space.stream.0";
     int opt;
     const char *log_filename = NULL;
     int logmask = LOG_UPTO(LOG_WARNING);

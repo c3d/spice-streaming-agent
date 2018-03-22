@@ -13,7 +13,7 @@ Virtual Machine Configuration
 =============================
 
 In order to set up streaming, qemu needs to expose a
-`com.redhat.stream.0` virtio port, associated with a
+`org.spice-space.stream.0` virtio port, associated with a
 corresponding Spice port.
 
 Using virt-manager
@@ -21,8 +21,8 @@ Using virt-manager
 
 In the hardware details, click on "Add Hardware", then select
 "Channel". Add a "Spice port" device type with the
-"com.redhat.stream.0" name. You also need to set "Channel" to
-"com.redhat.stream.0"
+"org.spice-space.stream.0" name. You also need to set "Channel" to
+"org.spice-space.stream.0"
 
 
 Using libvirt
@@ -31,8 +31,8 @@ Using libvirt
 [source,xml]
 <devices>
     <channel type='spiceport'>
-        <source channel='com.redhat.stream.0'/>
-        <target type='virtio' name='com.redhat.stream.0'/>
+        <source channel='org.spice-space.stream.0'/>
+        <target type='virtio' name='org.spice-space.stream.0'/>
     </channel>
 </devices>
 
@@ -40,4 +40,4 @@ Using QEMU
 ----------
 
 [source,sh]
--device virtserialport,bus=virtio-serial0.0,nr=1,chardev=charchannel1,id=channel1,name=com.redhat.stream.0 -chardev spiceport,name=com.redhat.stream.0,id=charchannel1
+-device virtserialport,bus=virtio-serial0.0,nr=1,chardev=charchannel1,id=channel1,name=org.spice-space.stream.0 -chardev spiceport,name=org.spice-space.stream.0,id=charchannel1
