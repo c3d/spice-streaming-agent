@@ -140,6 +140,15 @@ extern "C" unsigned spice_streaming_agent_plugin_interface_version;
  * \return true if plugin should stay loaded, false otherwise
  */
 extern "C" spice::streaming_agent::PluginInitFunc spice_streaming_agent_plugin_init;
+
+#define SPICE_STREAMING_AGENT_PLUGIN(agent)                             \
+    __attribute__ ((visibility ("default")))                            \
+    unsigned spice_streaming_agent_plugin_interface_version =           \
+        spice::streaming_agent::PluginVersion;                          \
+                                                                        \
+    __attribute__ ((visibility ("default")))                            \
+    bool spice_streaming_agent_plugin_init(spice::streaming_agent::Agent* agent)
+
 #endif
 
 #endif // SPICE_STREAMING_AGENT_PLUGIN_HPP
