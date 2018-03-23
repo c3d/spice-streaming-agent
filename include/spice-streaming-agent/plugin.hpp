@@ -103,20 +103,6 @@ class Agent
 {
 public:
     /*!
-     * Get agent version.
-     * Plugin should check the version for compatibility before doing
-     * everything.
-     * \return version specified like PluginVersion
-     */
-    virtual unsigned Version() const = 0;
-
-    /*!
-     * Check if a given plugin version is compatible with this agent
-     * \return true is compatible
-     */
-    virtual bool PluginVersionIsCompatible(unsigned pluginVersion) const = 0;
-
-    /*!
      * Register a plugin in the system.
      */
     virtual void Register(Plugin& plugin) = 0;
@@ -136,12 +122,18 @@ typedef bool PluginInitFunc(spice::streaming_agent::Agent* agent);
 
 #ifndef SPICE_STREAMING_AGENT_PROGRAM
 /*!
+ * Plugin interface version
+ * Each plugin should define this variable and set it to PluginVersion
+ * That version will be checked by the agent before executing any plugin code
+ */
+extern "C" unsigned spice_streaming_agent_plugin_interface_version;
+
+/*!
  * Plugin main entry point.
- * Plugins should check if the version of the agent is compatible.
- * If is compatible should register itself to the agent and return
- * true.
- * If is not compatible can decide to stay in memory or not returning
- * true (do not unload) or false (safe to unload). This is necessary
+ * This entry point is only called if the version check passed.
+ * It should return true if it loaded and initialized successfully.
+ * If the plugin does not initialize and does not want to be unloaded,
+ * it may still return true on failure. This is necessary
  * if the plugin uses some library which are not safe to be unloaded.
  * This public interface is also designed to avoid exporting data from
  * the plugin which could be a problem in some systems.
