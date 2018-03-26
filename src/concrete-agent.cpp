@@ -66,21 +66,21 @@ void ConcreteAgent::LoadPlugin(const std::string &plugin_filename)
         return;
     }
 
-    unsigned *version =
-        (unsigned *) dlsym(dl, "spice_streaming_agent_plugin_interface_version");
+    PluginInterfaceVersion *version =
+        (PluginInterfaceVersion *) dlsym(dl, "spice_streaming_agent_plugin_interface_version");
     if (!version) {
         syslog(LOG_ERR, "error loading plugin %s: no version information",
                plugin_filename.c_str());
         return;
     }
-    if (*version < PluginInterfaceOldestCompatibleVersion ||
-        *version > PluginInterfaceVersion) {
+    if (*version < PluginInterfaceVersion::OldestCompatible ||
+        *version > PluginInterfaceVersion::Current) {
         syslog(LOG_ERR,
                "error loading plugin %s: plugin interface version %u, "
                "agent accepts version %u...%u",
                plugin_filename.c_str(), *version,
-               PluginInterfaceOldestCompatibleVersion,
-               PluginInterfaceVersion);
+               PluginInterfaceVersion::OldestCompatible,
+               PluginInterfaceVersion::Current);
         return;
     }
 

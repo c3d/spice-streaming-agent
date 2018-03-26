@@ -35,9 +35,9 @@ class FrameCapture;
  * [DETECTED INCOMPATIBILITY]: If an incompatibility is detected after a release,
  * set PluginInterfaceOldestCompatibleVersion to the last known compatible version.
  */
-enum Constants : unsigned {
-    PluginInterfaceVersion = 1,
-    PluginInterfaceOldestCompatibleVersion = 1
+enum class PluginInterfaceVersion : unsigned {
+    Current = 1,
+    OldestCompatible = 1
 };
 
 enum Ranks : unsigned {
@@ -154,8 +154,9 @@ extern "C" spice::streaming_agent::PluginInitFunc spice_streaming_agent_plugin_i
 
 #define SPICE_STREAMING_AGENT_PLUGIN(agent)                             \
     __attribute__ ((visibility ("default")))                            \
-    unsigned spice_streaming_agent_plugin_interface_version =           \
-        spice::streaming_agent::PluginInterfaceVersion;                 \
+    spice::streaming_agent::PluginInterfaceVersion                      \
+    spice_streaming_agent_plugin_interface_version =                    \
+        spice::streaming_agent::PluginInterfaceVersion::Current;        \
                                                                         \
     __attribute__ ((visibility ("default")))                            \
     bool spice_streaming_agent_plugin_init(spice::streaming_agent::Agent* agent)
