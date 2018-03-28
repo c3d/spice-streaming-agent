@@ -25,15 +25,23 @@ class FrameCapture;
 /*!
  * Plugins use a versioning system similar to that implemented by libtool
  * http://www.gnu.org/software/libtool/manual/html_node/Libtool-versioning.html
+ *
  * Update the version information as follows:
- * [ANY CHANGE] If any interfaces have been added, removed, or changed since the last update,
- * increment PluginInterfaceVersion.
- * [COMPATIBLE CHANGE] If interfaces have only been added since the last public release,
- * leave PluginInterfaceOldestCompatibleVersion identical.
- * [INCOMPATIBLE CHANGE] If any interfaces have been removed or changed since the last release,
- * set PluginInterfaceOldestCompatibleVersion to PluginInterfaceVersion.
+ *
+ * [ANY CHANGE] If any change is made to this header, increment PluginInterfaceVersion::Current.
+ *
+ * [BINARY INCOMPATIBLE CHANGE] If the changes made to this header are not binary compatible,
+ * set PluginInterfaceVersion::OldestCompatible to PluginInterfaceVersion::Current
+ *
  * [DETECTED INCOMPATIBILITY]: If an incompatibility is detected after a release,
- * set PluginInterfaceOldestCompatibleVersion to the last known compatible version.
+ * set PluginInterfaceVersion::OldestCompatible to the last known compatible version.
+ *
+ * [BINARY COMPATIBILITY GUIDELINES]
+ * The following changes can be considered binary compatible:
+ * - Adding new file-scope or namespace-scope entities, e.g. variables, functions, classes
+ * - Adding new methods at the end of the Agent class (GCC-compatible compilers)
+ * - Adding new values at the end of an existing enum
+ * - Adding typedefs when that does not change any existing type in the file
  */
 enum class PluginInterfaceVersion : unsigned {
     Current = 1,
@@ -137,7 +145,8 @@ typedef bool PluginInitFunc(spice::streaming_agent::Agent* agent);
  * Each plugin should define this variable and set it to PluginInterfaceVersion
  * That version will be checked by the agent before executing any plugin code
  */
-extern "C" unsigned spice_streaming_agent_plugin_interface_version;
+extern "C"
+spice::streaming_agent::PluginInterfaceVersion spice_streaming_agent_plugin_interface_version;
 
 /*!
  * Plugin main entry point.
