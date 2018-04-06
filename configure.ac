@@ -36,18 +36,20 @@ AC_SUBST([SPICE_PROTOCOL_MIN_VER])
 PKG_CHECK_MODULES(X11, x11)
 PKG_CHECK_MODULES(XFIXES, xfixes)
 
-AC_CHECK_LIB(jpeg, jpeg_destroy_decompress,
-    AC_MSG_CHECKING([for jpeglib.h])
-    AC_TRY_CPP(
+PKG_CHECK_MODULES(JPEG, libjpeg, , [
+    AC_CHECK_LIB(jpeg, jpeg_destroy_decompress,
+        AC_MSG_CHECKING([for jpeglib.h])
+        AC_TRY_CPP(
 [#include <stdio.h>
 #undef PACKAGE
 #undef VERSION
 #undef HAVE_STDLIB_H
 #include <jpeglib.h>],
-        JPEG_LIBS='-ljpeg'
-        AC_MSG_RESULT($jpeg_ok),
-    AC_MSG_ERROR([jpeglib.h not found])),
-    AC_MSG_ERROR([libjpeg not found]))
+            JPEG_LIBS='-ljpeg'
+            AC_MSG_RESULT($jpeg_ok),
+        AC_MSG_ERROR([jpeglib.h not found])),
+        AC_MSG_ERROR([libjpeg not found]))
+])
 AC_SUBST(JPEG_LIBS)
 
 dnl ===========================================================================
