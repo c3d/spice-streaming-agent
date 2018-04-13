@@ -328,6 +328,12 @@ static void cursor_changes(StreamPort *stream_port, Display *display, int event_
     }
 }
 
+#define STAT_LOG(format, ...) do { \
+    if (f_log && !log_binary) { \
+        fprintf(f_log, "%" PRIu64 ": " format "\n", get_time(), ## __VA_ARGS__); \
+    } \
+} while(0)
+
 static void
 do_capture(StreamPort &stream_port, FILE *f_log)
 {
@@ -355,7 +361,9 @@ do_capture(StreamPort &stream_port, FILE *f_log)
             }
             uint64_t time_before = get_time();
 
+            STAT_LOG("Capturing...");
             FrameInfo frame = capture->CaptureFrame();
+            STAT_LOG("Captured");
 
             uint64_t time_after = get_time();
             syslog(LOG_DEBUG,
@@ -375,6 +383,7 @@ do_capture(StreamPort &stream_port, FILE *f_log)
                 codec = capture->VideoCodecType();
 
                 syslog(LOG_DEBUG, "wXh %uX%u  codec=%u\n", width, height, codec);
+                STAT_LOG("Started new stream wXh %uX%u  codec=%u", width, height, codec);
 
                 spice_stream_send_format(stream_port, width, height, codec);
             }
@@ -394,6 +403,7 @@ do_capture(StreamPort &stream_port, FILE *f_log)
                 syslog(e);
                 break;
             }
+            STAT_LOG("Sent");
 
             read_command(stream_port, false);
         }
@@ -420,6 +430,7 @@ int main(int argc, char* argv[])
         { "help", no_argument, NULL, 'h'},
         { 0, 0, 0, 0}
     };
+    std::vector<std::string> old_args(argv, argv+argc);
 
     openlog("spice-streaming-agent",
             isatty(fileno(stderr)) ? (LOG_PERROR|LOG_PID) : LOG_PID, LOG_USER);
@@ -478,7 +489,11 @@ int main(int argc, char* argv[])
                    log_filename, strerror(errno));
             return EXIT_FAILURE;
         }
+        for (const std::string& arg: old_args) {
+            STAT_LOG("Args: %s", arg.c_str());
+        }
     }
+    old_args.clear();
 
     Display *display = XOpenDisplay(NULL);
     if (display == NULL) {
