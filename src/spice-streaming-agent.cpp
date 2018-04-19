@@ -166,14 +166,11 @@ static void handle_stream_error(size_t len)
 static void read_command_from_device(void)
 {
     StreamDevHeader hdr;
-    int n;
 
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
-    n = read(streamfd, &hdr, sizeof(hdr));
-    if (n != sizeof(hdr)) {
-        throw std::runtime_error("read command from device FAILED -- read " + std::to_string(n) +
-                                 " expected " + std::to_string(sizeof(hdr)));
-    }
+
+    read_all(&hdr, sizeof(hdr));
+
     if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
         throw std::runtime_error("BAD VERSION " + std::to_string(hdr.protocol_version) +
                                  " (expected is " + std::to_string(STREAM_DEVICE_PROTOCOL) + ")");
