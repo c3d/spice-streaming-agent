@@ -61,7 +61,7 @@ static void usage(const char *progname)
 
 int main(int argc, char* argv[])
 {
-    const char *streamport = "/dev/virtio-ports/com.redhat.stream.0";
+    const char *streamport = "/dev/virtio-ports/org.spice-space.stream.0";
     int opt;
     const char *log_filename = NULL;
     bool log_binary = false;
