@@ -58,6 +58,7 @@ struct SpiceStreamDataMessage
 static bool streaming_requested = false;
 static bool quit_requested = false;
 static bool log_binary = false;
+static bool log_frames = false;
 static std::set<SpiceVideoCodecType> client_codecs;
 
 static bool have_something_to_read(StreamPort &stream_port, bool blocking)
@@ -254,6 +255,7 @@ static void usage(const char *progname)
     printf("\t-p portname  -- virtio-serial port to use\n");
     printf("\t-l file -- log frames to file\n");
     printf("\t--log-binary -- log binary frames (following -l)\n");
+    printf("\t--log-categories -- log categories, separated by ':' (currently: frames)\n");
     printf("\t--plugins-dir=path -- change plugins directory\n");
     printf("\t-d -- enable debug logs\n");
     printf("\t-c variable=value -- change settings\n");
@@ -391,7 +393,7 @@ do_capture(StreamPort &stream_port, FILE *f_log)
             if (f_log) {
                 if (log_binary) {
                     fwrite(frame.buffer, frame.buffer_size, 1, f_log);
-                } else {
+                } else if (log_frames) {
                     hexdump(frame.buffer, frame.buffer_size, f_log);
                 }
             }
@@ -422,10 +424,12 @@ int main(int argc, char* argv[])
         OPT_first = UCHAR_MAX,
         OPT_PLUGINS_DIR,
         OPT_LOG_BINARY,
+        OPT_LOG_CATEGORIES,
     };
     static const struct option long_options[] = {
         { "plugins-dir", required_argument, NULL, OPT_PLUGINS_DIR},
         { "log-binary", no_argument, NULL, OPT_LOG_BINARY},
+        { "log-categories", required_argument, NULL, OPT_LOG_CATEGORIES},
         { "help", no_argument, NULL, 'h'},
         { 0, 0, 0, 0}
     };
@@ -459,6 +463,15 @@ int main(int argc, char* argv[])
         }
         case OPT_LOG_BINARY:
             log_binary = true;
+            break;
+        case OPT_LOG_CATEGORIES:
+            for (const char *tok = strtok(optarg, ":"); tok; tok = strtok(nullptr, ":")) {
+                std::string cat = tok;
+                if (cat == "frames") {
+                    log_frames = true;
+                }
+                // ignore not existing, compatibility for future
+            }
             break;
         case 'l':
             log_filename = optarg;
