@@ -387,12 +387,11 @@ do_capture(StreamPort &stream_port, FILE *f_log)
 
                 spice_stream_send_format(stream_port, width, height, codec);
             }
+            STAT_LOG("Frame of %zu bytes:", frame.buffer_size);
             if (f_log) {
                 if (log_binary) {
                     fwrite(frame.buffer, frame.buffer_size, 1, f_log);
                 } else {
-                    fprintf(f_log, "%" PRIu64 ": Frame of %zu bytes:\n",
-                            get_time(), frame.buffer_size);
                     hexdump(frame.buffer, frame.buffer_size, f_log);
                 }
             }
