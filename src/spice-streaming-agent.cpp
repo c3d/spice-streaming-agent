@@ -489,6 +489,9 @@ int main(int argc, char* argv[])
                    log_filename, strerror(errno));
             return EXIT_FAILURE;
         }
+        if (!log_binary) {
+            setlinebuf(f_log);
+        }
         for (const std::string& arg: old_args) {
             STAT_LOG("Args: %s", arg.c_str());
         }
