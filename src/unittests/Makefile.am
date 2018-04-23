@@ -13,6 +13,10 @@ AM_CFLAGS = \
 	$(WARN_CFLAGS) \
 	$(NULL)
 
+AM_CXXFLAGS = \
+	$(WARN_CXXFLAGS) \
+	$(NULL)
+
 check_PROGRAMS = \
 	hexdump \
 	test-mjpeg-fallback \
