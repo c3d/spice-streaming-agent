@@ -17,10 +17,10 @@
 namespace spice {
 namespace streaming_agent {
 
-void read_all(int fd, void *msg, size_t len)
+void read_all(int fd, void *buf, size_t len)
 {
     while (len > 0) {
-        ssize_t n = read(fd, msg, len);
+        ssize_t n = read(fd, buf, len);
 
         if (n < 0) {
             if (errno == EINTR) {
@@ -30,22 +30,24 @@ void read_all(int fd, void *msg, size_t len)
         }
 
         len -= n;
-        msg = (uint8_t *) msg + n;
+        buf = (uint8_t *) buf + n;
     }
 }
 
-void write_all(int fd, const void *buf, const size_t len)
+void write_all(int fd, const void *buf, size_t len)
 {
-    size_t written = 0;
-    while (written < len) {
-        int l = write(fd, (const char *) buf + written, len - written);
-        if (l < 0) {
+    while (len > 0) {
+        ssize_t n = write(fd, buf, len);
+
+        if (n < 0) {
             if (errno == EINTR) {
                 continue;
             }
             throw WriteError("Writing message to device failed", errno);
         }
-        written += l;
+
+        len -= n;
+        buf = (uint8_t *) buf + n;
     }
 }
 

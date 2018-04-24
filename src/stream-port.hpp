@@ -13,8 +13,8 @@
 namespace spice {
 namespace streaming_agent {
 
-void read_all(int fd, void *msg, size_t len);
-void write_all(int fd, const void *buf, const size_t len);
+void read_all(int fd, void *buf, size_t len);
+void write_all(int fd, const void *buf, size_t len);
 
 }} // namespace spice::streaming_agent
 
