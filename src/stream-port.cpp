@@ -34,7 +34,7 @@ void read_all(int fd, void *msg, size_t len)
     }
 }
 
-size_t write_all(int fd, const void *buf, const size_t len)
+void write_all(int fd, const void *buf, const size_t len)
 {
     size_t written = 0;
     while (written < len) {
@@ -43,13 +43,10 @@ size_t write_all(int fd, const void *buf, const size_t len)
             if (errno == EINTR) {
                 continue;
             }
-            syslog(LOG_ERR, "write failed - %m");
-            return l;
+            throw WriteError("Writing message to device failed", errno);
         }
         written += l;
     }
-    syslog(LOG_DEBUG, "write_all -- %u bytes written\n", (unsigned)written);
-    return written;
 }
 
 }} // namespace spice::streaming_agent

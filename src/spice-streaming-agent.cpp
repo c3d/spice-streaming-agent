@@ -8,6 +8,7 @@
 #include "hexdump.h"
 #include "mjpeg-fallback.hpp"
 #include "stream-port.hpp"
+#include "error.hpp"
 
 #include <spice/stream-device.h>
 #include <spice/enums.h>
@@ -113,9 +114,7 @@ static void handle_stream_capabilities(uint32_t len)
         STREAM_TYPE_CAPABILITIES,
         0
     };
-    if (write_all(streamfd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
-        throw std::runtime_error("error writing capabilities");
-    }
+    write_all(streamfd, &hdr, sizeof(hdr));
 }
 
 static void handle_stream_error(size_t len)
@@ -186,7 +185,7 @@ static int read_command(bool blocking)
     return 1;
 }
 
-static int spice_stream_send_format(unsigned w, unsigned h, unsigned c)
+static void spice_stream_send_format(unsigned w, unsigned h, unsigned c)
 {
 
     SpiceStreamFormatMessage msg;
@@ -201,40 +200,23 @@ static int spice_stream_send_format(unsigned w, unsigned h, unsigned c)
     msg.msg.codec = c;
     syslog(LOG_DEBUG, "writing format\n");
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
-    if (write_all(streamfd, &msg, msgsize) != msgsize) {
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
+    write_all(streamfd, &msg, msgsize);
 }
 
-static int spice_stream_send_frame(const void *buf, const unsigned size)
+static void spice_stream_send_frame(const void *buf, const unsigned size)
 {
     SpiceStreamDataMessage msg;
     const size_t msgsize = sizeof(msg);
-    ssize_t n;
 
     memset(&msg, 0, msgsize);
     msg.hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
     msg.hdr.type = STREAM_TYPE_DATA;
     msg.hdr.size = size; /* includes only the body? */
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
-    n = write_all(streamfd, &msg, msgsize);
-    syslog(LOG_DEBUG,
-           "wrote %ld bytes of header of data msg with frame of size %u bytes\n",
-           n, msg.hdr.size);
-    if (n != msgsize) {
-        syslog(LOG_WARNING, "write_all header: wrote %ld expected %lu\n",
-               n, msgsize);
-        return EXIT_FAILURE;
-    }
-    n = write_all(streamfd, buf, size);
-    syslog(LOG_DEBUG, "wrote data msg body of size %ld\n", n);
-    if (n != size) {
-        syslog(LOG_WARNING, "write_all header: wrote %ld expected %u\n",
-               n, size);
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
+    write_all(streamfd, &msg, msgsize);
+    write_all(streamfd, buf, size);
+
+    syslog(LOG_DEBUG, "Sent a frame of size %u\n", size);
 }
 
 /* returns current time in micro-seconds */
@@ -403,9 +385,7 @@ do_capture(const char *streamport, FILE *f_log)
 
                 syslog(LOG_DEBUG, "wXh %uX%u  codec=%u\n", width, height, codec);
 
-                if (spice_stream_send_format(width, height, codec) == EXIT_FAILURE) {
-                    throw std::runtime_error("FAILED to send format message");
-                }
+                spice_stream_send_format(width, height, codec);
             }
             if (f_log) {
                 if (log_binary) {
@@ -416,10 +396,14 @@ do_capture(const char *streamport, FILE *f_log)
                     hexdump(frame.buffer, frame.buffer_size, f_log);
                 }
             }
-            if (spice_stream_send_frame(frame.buffer, frame.buffer_size) == EXIT_FAILURE) {
-                syslog(LOG_ERR, "FAILED to send a frame\n");
+
+            try {
+                spice_stream_send_frame(frame.buffer, frame.buffer_size);
+            } catch (const WriteError& e) {
+                syslog(e);
                 break;
             }
+
             //usleep(1);
             if (read_command(false) < 0) {
                 syslog(LOG_ERR, "FAILED to read command\n");

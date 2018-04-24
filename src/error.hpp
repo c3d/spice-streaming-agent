@@ -9,6 +9,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <syslog.h>
 
 
 namespace spice {
@@ -31,6 +32,19 @@ class ReadError : public IOError
 public:
     using IOError::IOError;
 };
+
+class WriteError : public IOError
+{
+public:
+    using IOError::IOError;
+};
+
+template<class T>
+const T &syslog(const T &error) noexcept
+{
+    ::syslog(LOG_ERR, "%s\n", error.what());
+    return error;
+}
 
 }} // namespace spice::streaming_agent
 
