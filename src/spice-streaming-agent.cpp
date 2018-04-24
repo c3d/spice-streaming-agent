@@ -535,7 +535,7 @@ int main(int argc, char* argv[])
     try {
         do_capture(streamport, f_log);
     }
-    catch (std::runtime_error &err) {
+    catch (std::exception &err) {
         syslog(LOG_ERR, "%s\n", err.what());
         ret = EXIT_FAILURE;
     }

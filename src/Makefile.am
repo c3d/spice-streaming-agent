@@ -52,6 +52,8 @@ spice_streaming_agent_SOURCES = \
 	spice-streaming-agent.cpp \
 	concrete-agent.cpp \
 	concrete-agent.hpp \
+	error.cpp \
+	error.hpp \
 	mjpeg-fallback.cpp \
 	mjpeg-fallback.hpp \
 	jpeg.cpp \

@@ -5,6 +5,7 @@
  */
 
 #include "stream-port.hpp"
+#include "error.hpp"
 
 #include <errno.h>
 #include <string.h>
@@ -25,8 +26,7 @@ void read_all(int fd, void *msg, size_t len)
             if (errno == EINTR) {
                 continue;
             }
-            throw std::runtime_error("Reading message from device failed: " +
-                                     std::string(strerror(errno)));
+            throw ReadError("Reading message from device failed", errno);
         }
 
         len -= n;
