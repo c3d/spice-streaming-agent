@@ -56,4 +56,6 @@ spice_streaming_agent_SOURCES = \
 	mjpeg-fallback.hpp \
 	jpeg.cpp \
 	jpeg.hpp \
+	stream-port.cpp \
+	stream-port.hpp \
 	$(NULL)

@@ -7,6 +7,7 @@
 #include "concrete-agent.hpp"
 #include "hexdump.h"
 #include "mjpeg-fallback.hpp"
+#include "stream-port.hpp"
 
 #include <spice/stream-device.h>
 #include <spice/enums.h>
@@ -39,8 +40,6 @@
 #include <X11/extensions/Xfixes.h>
 
 using namespace spice::streaming_agent;
-
-static size_t write_all(int fd, const void *buf, const size_t len);
 
 static ConcreteAgent agent;
 
@@ -79,24 +78,6 @@ static int have_something_to_read(int timeout)
     return 0;
 }
 
-static void read_all(void *msg, size_t len)
-{
-    while (len > 0) {
-        ssize_t n = read(streamfd, msg, len);
-
-        if (n < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            throw std::runtime_error("Reading message from device failed: " +
-                                     std::string(strerror(errno)));
-        }
-
-        len -= n;
-        msg = (uint8_t *) msg + n;
-    }
-}
-
 static void handle_stream_start_stop(uint32_t len)
 {
     uint8_t msg[256];
@@ -106,7 +87,7 @@ static void handle_stream_start_stop(uint32_t len)
                                  "(longer than " + std::to_string(sizeof(msg)) + ")");
     }
 
-    read_all(msg, len);
+    read_all(streamfd, msg, len);
     streaming_requested = (msg[0] != 0); /* num_codecs */
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
            streaming_requested ? "START" : "STOP");
@@ -124,7 +105,7 @@ static void handle_stream_capabilities(uint32_t len)
         throw std::runtime_error("capability message too long");
     }
 
-    read_all(caps, len);
+    read_all(streamfd, caps, len);
     // we currently do not support extensions so just reply so
     StreamDevHeader hdr = {
         STREAM_DEVICE_PROTOCOL,
@@ -151,7 +132,7 @@ static void handle_stream_error(size_t len)
 
     size_t len_to_read = std::min(len, sizeof(msg) - 1);
 
-    read_all(&msg, len_to_read);
+    read_all(streamfd, &msg, len_to_read);
     msg.msg[len_to_read - sizeof(StreamMsgNotifyError)] = '\0';
 
     syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s\n",
@@ -169,7 +150,7 @@ static void read_command_from_device(void)
 
     std::lock_guard<std::mutex> stream_guard(stream_mtx);
 
-    read_all(&hdr, sizeof(hdr));
+    read_all(streamfd, &hdr, sizeof(hdr));
 
     if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
         throw std::runtime_error("BAD VERSION " + std::to_string(hdr.protocol_version) +
@@ -203,25 +184,6 @@ static int read_command(bool blocking)
     }
 
     return 1;
-}
-
-static size_t
-write_all(int fd, const void *buf, const size_t len)
-{
-    size_t written = 0;
-    while (written < len) {
-        int l = write(fd, (const char *) buf + written, len - written);
-        if (l < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            syslog(LOG_ERR, "write failed - %m");
-            return l;
-        }
-        written += l;
-    }
-    syslog(LOG_DEBUG, "write_all -- %u bytes written\n", (unsigned)written);
-    return written;
 }
 
 static int spice_stream_send_format(unsigned w, unsigned h, unsigned c)
