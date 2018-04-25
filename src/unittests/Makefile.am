@@ -20,11 +20,13 @@ AM_CXXFLAGS = \
 check_PROGRAMS = \
 	hexdump \
 	test-mjpeg-fallback \
+	test-stream-port \
 	$(NULL)
 
 TESTS = \
 	test-hexdump.sh \
 	test-mjpeg-fallback \
+	test-stream-port \
 	$(NULL)
 
 noinst_PROGRAMS = \
@@ -48,6 +50,12 @@ test_mjpeg_fallback_SOURCES = \
 test_mjpeg_fallback_LDADD = \
 	$(X11_LIBS) \
 	$(JPEG_LIBS) \
+	$(NULL)
+
+test_stream_port_SOURCES = \
+	test-stream-port.cpp \
+	../stream-port.cpp \
+	../error.cpp \
 	$(NULL)
 
 EXTRA_DIST = \
