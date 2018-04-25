@@ -72,7 +72,7 @@ static int have_something_to_read(int timeout)
         return -1;
     }
 
-    if (pollfd.revents == POLLIN) {
+    if (pollfd.revents & POLLIN) {
         return 1;
     }
 
@@ -330,7 +330,7 @@ static void cursor_changes(Display *display, int event_base)
 static void
 do_capture(const char *streamport, FILE *f_log)
 {
-    streamfd = open(streamport, O_RDWR);
+    streamfd = open(streamport, O_RDWR | O_NONBLOCK);
     if (streamfd < 0) {
         throw std::runtime_error("failed to open the streaming device (" +
                                  std::string(streamport) + "): "

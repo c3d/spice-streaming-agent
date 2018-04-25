@@ -7,6 +7,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch/catch.hpp>
 #include <sys/socket.h>
+#include <signal.h>
 
 #include "stream-port.hpp"
 #include "error.hpp"
@@ -19,12 +20,18 @@ namespace ssa = spice::streaming_agent;
  * that is actually used for the real interface.
  */
 SCENARIO("test basic IO on the stream port", "[port][io]") {
+    // When trying to write to a socket that was closed on the other side, the
+    // process receives a SIGPIPE, which is a difference to the virtio port,
+    // which returns EAGAIN from write(). By ignoring the SIGPIPE we get EPIPE
+    // from write() instead.
+    signal(SIGPIPE, SIG_IGN);
+
     GIVEN("An open port (socketpair)") {
         int fd[2];
         const char *src_buf = "brekeke";
         const size_t src_size = strlen(src_buf);
 
-        socketpair(AF_LOCAL, SOCK_STREAM, 0, fd);
+        socketpair(AF_LOCAL, SOCK_STREAM | SOCK_NONBLOCK, 0, fd);
 
         WHEN("reading data in one go") {
             CHECK(write(fd[0], src_buf, src_size) == src_size);
@@ -58,6 +65,19 @@ SCENARIO("test basic IO on the stream port", "[port][io]") {
             ssa::read_all(fd[1], buf, 4);
             CHECK(std::string(buf, 4) == "keke");
             CHECK_THROWS_AS(ssa::read_all(fd[1], buf, 1), ssa::ReadError);
+        }
+
+        // This test behaves differently with socketpair than it does with the virtio port:
+        // real case:
+        // - write() on the virtio port returns EAGAIN
+        // - subsequent poll() on the port returns POLLHUP, which throws WriteError
+        // test case:
+        // - write() on the socketpair returns EPIPE, which throws WriteError
+        WHEN("closing the remote end and trying to write") {
+            ssa::write_all(fd[1], src_buf, src_size);
+            char buf[10];
+            CHECK(close(fd[0]) == 0);
+            CHECK_THROWS_AS(ssa::write_all(fd[1], src_buf, src_size), ssa::WriteError);
         }
 
         // clean up the descriptors in case they are still open

@@ -8,6 +8,7 @@
 #include "error.hpp"
 
 #include <errno.h>
+#include <poll.h>
 #include <string.h>
 #include <syslog.h>
 #include <unistd.h>
@@ -27,8 +28,26 @@ void read_all(int fd, void *buf, size_t len)
         }
 
         if (n < 0) {
-            if (errno == EINTR) {
-                continue;
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
+                struct pollfd pollfd = {fd, POLLIN, 0};
+                if (poll(&pollfd, 1, -1) < 0) {
+                    if (errno == EINTR) {
+                        continue;
+                    }
+
+                    throw ReadError("poll failed while reading message from device", errno);
+                }
+
+                if (pollfd.revents & POLLIN) {
+                    continue;
+                }
+
+                if (pollfd.revents & POLLHUP) {
+                    throw ReadError("Reading message from device failed: The device is closed.");
+                }
+
+                throw ReadError("Reading message from device failed: poll returned " +
+                                std::to_string(pollfd.revents));
             }
             throw ReadError("Reading message from device failed", errno);
         }
@@ -44,8 +63,26 @@ void write_all(int fd, const void *buf, size_t len)
         ssize_t n = write(fd, buf, len);
 
         if (n < 0) {
-            if (errno == EINTR) {
-                continue;
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
+                struct pollfd pollfd = {fd, POLLOUT, 0};
+                if (poll(&pollfd, 1, -1) < 0) {
+                    if (errno == EINTR) {
+                        continue;
+                    }
+
+                    throw WriteError("poll failed while writing message to device", errno);
+                }
+
+                if (pollfd.revents & POLLOUT) {
+                    continue;
+                }
+
+                if (pollfd.revents & POLLHUP) {
+                    throw WriteError("Writing message to device failed: The device is closed.");
+                }
+
+                throw WriteError("Writing message to device failed: poll returned " +
+                                 std::to_string(pollfd.revents));
             }
             throw WriteError("Writing message to device failed", errno);
         }
