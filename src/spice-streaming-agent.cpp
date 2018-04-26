@@ -60,20 +60,24 @@ static bool quit_requested = false;
 static bool log_binary = false;
 static std::set<SpiceVideoCodecType> client_codecs;
 
-static int have_something_to_read(StreamPort &stream_port, int timeout)
+static bool have_something_to_read(StreamPort &stream_port, bool blocking)
 {
     struct pollfd pollfd = {stream_port.fd, POLLIN, 0};
 
-    if (poll(&pollfd, 1, timeout) < 0) {
-        syslog(LOG_ERR, "poll FAILED\n");
-        return -1;
+    if (poll(&pollfd, 1, blocking ? -1 : 0) < 0) {
+        if (errno == EINTR) {
+            // report nothing to read, next iteration of the enclosing loop will retry
+            return false;
+        }
+
+        throw IOError("poll failed on the device", errno);
     }
 
     if (pollfd.revents & POLLIN) {
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 static void handle_stream_start_stop(StreamPort &stream_port, uint32_t len)
@@ -164,22 +168,20 @@ static void read_command_from_device(StreamPort &stream_port)
     throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
 }
 
-static int read_command(StreamPort &stream_port, bool blocking)
+static void read_command(StreamPort &stream_port, bool blocking)
 {
-    int timeout = blocking?-1:0;
     while (!quit_requested) {
-        if (!have_something_to_read(stream_port, timeout)) {
-            if (!blocking) {
-                return 0;
-            }
-            sleep(1);
-            continue;
+        if (have_something_to_read(stream_port, blocking)) {
+            read_command_from_device(stream_port);
+            break;
         }
-        read_command_from_device(stream_port);
-        break;
-    }
 
-    return 1;
+        if (!blocking) {
+            break;
+        }
+
+        sleep(1);
+    }
 }
 
 static void spice_stream_send_format(StreamPort &stream_port, unsigned w, unsigned h, unsigned c)
@@ -332,9 +334,7 @@ do_capture(StreamPort &stream_port, FILE *f_log)
     unsigned int frame_count = 0;
     while (!quit_requested) {
         while (!quit_requested && !streaming_requested) {
-            if (read_command(stream_port, true) < 0) {
-                throw std::runtime_error("FAILED to read command");
-            }
+            read_command(stream_port, true);
         }
 
         if (quit_requested) {
@@ -395,10 +395,7 @@ do_capture(StreamPort &stream_port, FILE *f_log)
                 break;
             }
 
-            //usleep(1);
-            if (read_command(stream_port, false) < 0) {
-                throw std::runtime_error("FAILED to read command");
-            }
+            read_command(stream_port, false);
         }
     }
 }
