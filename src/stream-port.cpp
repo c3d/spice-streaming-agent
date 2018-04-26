@@ -8,6 +8,7 @@
 #include "error.hpp"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <poll.h>
 #include <string.h>
 #include <syslog.h>
@@ -17,6 +18,28 @@
 
 namespace spice {
 namespace streaming_agent {
+
+StreamPort::StreamPort(const std::string &port_name) : fd(open(port_name.c_str(), O_RDWR | O_NONBLOCK))
+{
+    if (fd < 0) {
+        throw IOError("Failed to open the streaming device \"" + port_name + "\"", errno);
+    }
+}
+
+StreamPort::~StreamPort()
+{
+    close(fd);
+}
+
+void StreamPort::read(void *buf, size_t len)
+{
+    read_all(fd, buf, len);
+}
+
+void StreamPort::write(const void *buf, size_t len)
+{
+    write_all(fd, buf, len);
+}
 
 void read_all(int fd, void *buf, size_t len)
 {
