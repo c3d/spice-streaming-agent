@@ -1,5 +1,5 @@
-TOP=../../
-BUILD=$(TOP)build/
+TOP=../
+MIQ=$(TOP)make-it-quick/
 
 PRODUCTS=	spice-streaming-agent.exe
 
@@ -14,6 +14,8 @@ SOURCES=	spice-streaming-agent.cpp 				\
 		concrete-agent.cpp					\
 		mjpeg-fallback.cpp					\
 		jpeg.cpp						\
+		stream-port.cpp						\
+		error.cpp						\
 		hexdump.c
 
 INCLUDES=	.							\
@@ -25,7 +27,9 @@ INCLUDES_macosx=/usr/X11/include
 DEFINES=	SPICE_STREAMING_AGENT_PROGRAM				\
 		PLUGINSDIR=\"$(PREFIX_LIB)spice-streaming-agent\"	\
 
-LDFLAGS_EXTRA=	$(LDFLAGS_$(OS_NAME))
+LDFLAGS +=	$(LDFLAGS_$(OS_NAME))
 LDFLAGS_macosx=	-L/usr/X11/lib
 
-include $(BUILD)rules.mk
+include $(MIQ)rules.mk
+$(MIQ)rules.mk:
+	cd $(TOP) && make $(TARGET)
