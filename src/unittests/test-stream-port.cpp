@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 
 #include "stream-port.hpp"
+#include "error.hpp"
 
 
 namespace ssa = spice::streaming_agent;
@@ -46,6 +47,17 @@ SCENARIO("test basic IO on the stream port", "[port][io]") {
             char buf[10];
             CHECK(read(fd[0], buf, src_size) == src_size);
             CHECK(std::string(buf, src_size) == src_buf);
+        }
+
+        WHEN("closing the remote end and trying to read") {
+            CHECK(write(fd[0], src_buf, src_size) == src_size);
+            char buf[10];
+            ssa::read_all(fd[1], buf, 3);
+            CHECK(std::string(buf, 3) == "bre");
+            CHECK(close(fd[0]) == 0);
+            ssa::read_all(fd[1], buf, 4);
+            CHECK(std::string(buf, 4) == "keke");
+            CHECK_THROWS_AS(ssa::read_all(fd[1], buf, 1), ssa::ReadError);
         }
 
         // clean up the descriptors in case they are still open

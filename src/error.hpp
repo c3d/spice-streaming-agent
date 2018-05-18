@@ -24,6 +24,8 @@ public:
 class IOError : public Error
 {
 public:
+    using Error::Error;
+
     IOError(const std::string &msg, int sys_errno);
 };
 

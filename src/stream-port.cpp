@@ -22,6 +22,10 @@ void read_all(int fd, void *buf, size_t len)
     while (len > 0) {
         ssize_t n = read(fd, buf, len);
 
+        if (n == 0) {
+            throw ReadError("Reading message from device failed: read() returned 0, device is closed.");
+        }
+
         if (n < 0) {
             if (errno == EINTR) {
                 continue;
