@@ -177,3 +177,10 @@ FrameCapture *ConcreteAgent::GetBestFrameCapture(const std::set<SpiceVideoCodecT
     }
     return nullptr;
 }
+
+void ConcreteAgent::AdjustParameter(unsigned id, unsigned value)
+{
+    for (auto plugin : plugins) {
+        plugin->AdjustParameter(id, value);
+    }
+}

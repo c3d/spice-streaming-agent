@@ -6,6 +6,7 @@
 
 #include <config.h>
 #include "mjpeg-fallback.hpp"
+#include "spice/stream-device.h"
 
 #include <cstring>
 #include <exception>
@@ -213,4 +214,25 @@ bool MjpegPlugin::Register(Agent* agent)
     agent->Register(*plugin.release());
 
     return true;
+}
+
+void MjpegPlugin::AdjustParameter(unsigned id, unsigned value)
+{
+    switch(id) {
+    case STREAM_MSG_PARAMETER_FRAMES_PER_SECOND:
+        settings.fps = value;
+        break;
+    case STREAM_MSG_PARAMETER_MAX_BYTES_PER_SECOND:
+    case STREAM_MSG_PARAMETER_AVERAGE_BYTES_PER_SECOND:
+        settings.target_bandwidth = value;
+        break;
+    case STREAM_MSG_PARAMETER_GROUP_OF_PICTURE_SIZE:
+        /* Ignored: always 1 for MJPEG */
+        break;
+    case STREAM_MSG_PARAMETER_QUALITY:
+        settings.quality = value;
+        break;
+    default:
+        syslog(LOG_WARNING, "Unknown MJPEG plugin dynamic parameter ID %u ignored", id);
+    }
 }

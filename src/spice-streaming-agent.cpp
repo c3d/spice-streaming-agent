@@ -146,6 +146,18 @@ static void handle_stream_error(StreamPort &stream_port, size_t len)
     }
 }
 
+static void handle_stream_adjust_encoding_parameters(StreamPort &stream_port, uint32_t len)
+{
+    StreamMsgAdjustEncodingParameters msg;
+
+    if (len != sizeof(msg)) {
+        throw std::runtime_error("msg size (" + std::to_string(len) + ") is incorrect "
+                                 "(should be " + std::to_string(sizeof(msg)) + ")");
+    }
+
+    stream_port.read(&msg, len);
+}
+
 static void read_command_from_device(StreamPort &stream_port)
 {
     StreamDevHeader hdr;
@@ -165,6 +177,8 @@ static void read_command_from_device(StreamPort &stream_port)
         return handle_stream_error(stream_port, hdr.size);
     case STREAM_TYPE_START_STOP:
         return handle_stream_start_stop(stream_port, hdr.size);
+    case STREAM_TYPE_ADJUST_ENCODING_PARAMETERS:
+        return handle_stream_adjust_encoding_parameters(stream_port, hdr.size);
     }
     throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
 }

@@ -33,6 +33,7 @@ public:
     // pointer must remain valid
     void AddOption(const char *name, const char *value);
     FrameCapture *GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs);
+    void AdjustParameter(unsigned id, unsigned value);
 private:
     bool PluginVersionIsCompatible(unsigned pluginVersion) const;
     void LoadPlugin(const std::string &plugin_filename);
