@@ -15,8 +15,9 @@ namespace streaming_agent {
 
 struct MjpegSettings
 {
-    int fps;
-    int quality;
+    unsigned fps;
+    unsigned quality;
+    unsigned target_bandwidth;
 };
 
 class MjpegPlugin final: public Plugin
@@ -29,7 +30,7 @@ public:
     SpiceVideoCodecType VideoCodecType() const override;
     static bool Register(Agent* agent);
 private:
-    MjpegSettings settings = { 10, 80 };
+    MjpegSettings settings = { 10, 80, 1000000 };
 };
 
 }} // namespace spice::streaming_agent

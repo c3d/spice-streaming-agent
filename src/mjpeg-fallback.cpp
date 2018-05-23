@@ -50,6 +50,8 @@ private:
     int last_width = -1, last_height = -1;
     // last time before capture
     uint64_t last_time = 0;
+    // rolling average of bandwidth
+    unsigned average_bandwidth = 1000000;
 };
 
 }
@@ -134,6 +136,19 @@ FrameInfo MjpegFrameCapture::CaptureFrame()
 
     info.stream_start = is_first;
 
+    // Compute moving average and see if need to adjust quality
+    unsigned fps = settings.fps;
+    unsigned high = 11 * settings.target_bandwidth / 10;
+    unsigned low = 9 * settings.target_bandwidth / 10;
+
+    unsigned predicted_bandwidth = info.buffer_size * fps;
+    average_bandwidth = average_bandwidth + (predicted_bandwidth - average_bandwidth) / (fps+1);
+    if (average_bandwidth > high && settings.quality > 1) {
+        settings.quality -= 1;
+    } else if (average_bandwidth < low && settings.quality < 100) {
+        settings.quality += 1;
+    }
+
     return info;
 }
 
@@ -164,6 +179,13 @@ void MjpegPlugin::ParseOptions(const ConfigureOption *options)
                 settings.quality = stoi(value);
             } catch (const std::exception &e) {
                 throw std::runtime_error("Invalid value '" + value + "' for option 'mjpeg.quality'.");
+            }
+        }
+        else if (name == "mjpeg.bandwidth") {
+            try {
+                settings.target_bandwidth = stoi(value);
+            } catch (const std::exception &e) {
+                throw std::runtime_error("Invalid value '" + value + "' for option 'mjpeg.bandwidth'.");
             }
         }
     }
