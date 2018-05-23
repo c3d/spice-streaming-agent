@@ -14,6 +14,7 @@ SCENARIO("test parsing mjpeg plugin options", "[mjpeg][options]") {
             std::vector<ssa::ConfigureOption> options = {
                 {"framerate", "20"},
                 {"mjpeg.quality", "90"},
+                {"mjpeg.bandiwdth", "1000000"}
                 {NULL, NULL}
             };
 
@@ -23,6 +24,7 @@ SCENARIO("test parsing mjpeg plugin options", "[mjpeg][options]") {
             THEN("the options are set in the plugin") {
                 CHECK(new_options.fps == 20);
                 CHECK(new_options.quality == 90);
+                CHECK(new_options.target_bandwidth == 1000000);
             }
         }
 
