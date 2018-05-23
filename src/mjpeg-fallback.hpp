@@ -29,6 +29,7 @@ public:
     MjpegSettings Options() const;  // TODO unify on Settings vs Options
     SpiceVideoCodecType VideoCodecType() const override;
     static bool Register(Agent* agent);
+    void AdjustParameter(unsigned id, unsigned value) override;
 private:
     MjpegSettings settings = { 10, 80, 1000000 };
 };

@@ -90,6 +90,11 @@ public:
      * Get video codec used to encode last frame
      */
     virtual SpiceVideoCodecType VideoCodecType() const = 0;
+
+    /*!
+     * Adjust a parameter dynamically
+     */
+    virtual void AdjustParameter(unsigned id, unsigned value) = 0;
 };
 
 /*!
