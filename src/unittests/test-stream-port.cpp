@@ -75,7 +75,6 @@ SCENARIO("test basic IO on the stream port", "[port][io]") {
         // - write() on the socketpair returns EPIPE, which throws WriteError
         WHEN("closing the remote end and trying to write") {
             ssa::write_all(fd[1], src_buf, src_size);
-            char buf[10];
             CHECK(close(fd[0]) == 0);
             CHECK_THROWS_AS(ssa::write_all(fd[1], src_buf, src_size), ssa::WriteError);
         }
