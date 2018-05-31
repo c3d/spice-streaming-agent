@@ -18,6 +18,7 @@ if test x"$ac_cv_prog_cc_c99" = xno; then
 fi
 AC_PROG_CXX
 AC_LANG(C++)
+m4_ifndef([AX_CXX_COMPILE_STDCXX_11], [m4_fatal([Missing AX_CXX_COMPILE_STDCXX_11, install autoconf-archive])])
 AX_CXX_COMPILE_STDCXX_11
 AC_PROG_INSTALL
 AC_CANONICAL_HOST
