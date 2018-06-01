@@ -64,4 +64,8 @@ spice_streaming_agent_SOURCES = \
 	jpeg.hpp \
 	stream-port.cpp \
 	stream-port.hpp \
+	recorder/recorder.c \
+	recorder/recorder.h \
+	recorder/recorder_ring.c \
+	recorder/recorder_ring.h \
 	$(NULL)
