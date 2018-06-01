@@ -322,6 +322,8 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
 
 int main(int argc, char* argv[])
 {
+    recorder_dump_on_common_signals(0,0);
+
     const char *stream_port_name = "/dev/virtio-ports/org.spice-space.stream.0";
     int opt;
     const char *log_filename = NULL;
