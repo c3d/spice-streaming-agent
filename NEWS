@@ -1,0 +1,27 @@
+Major changes in 0.2:
+=====================
+- First release
+- This is a development release and API/ABI consistency is not guaranteed
+- Update copyright license to Apache 2
+- Rename the virtio port to org.spice-space.stream.0
+- Change version scheme: ensure plugins cannot bypass version check
+- build: Install .pc file to ${libdir}, not ${sharedir}
+- build: Generate .xz tarballs rather than bz2
+- Report a reason when there is an error loading the plugin
+- Do not use an encoding not supported by the client
+- Change name space to spice::streaming_agent
+- Remove reading start/stop commands from stdin
+- Explicit registration for built-in plugins (was static)
+- Run CI tests on gitlab
+- Handle STREAM_TYPE_CAPABILITIES message from the server
+- Allow to set plugins directory via command line
+- Add autogen.sh script
+- Open virtio port in NONBLOCK mode
+- Upon failure in one plugin, try to use another plugin instead of bailing out
+- Build requires catch-devel for tests
+- Build requires autoconf-archive to make sure build is done with -std=c++11
+
+Major changes in 0.1:
+=====================
+- Capture encoded frames via plugins and send it over to spice-server via
+  a virtio port device.

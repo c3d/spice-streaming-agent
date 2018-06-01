@@ -68,5 +68,8 @@ fi
 %{_libdir}/pkgconfig
 
 %changelog
+* Thu May 31 2018 Uri Lublin <uril@redhat.com> - 0.2-1
+- First release
+
 * Wed Aug 16 2017 Frediano Ziglio <fziglio@redhat.com> - 0.1-1
 - Initial package (pre-release)
