@@ -11,3 +11,4 @@ build_and_test:
     - ./configure
     - make
     - make check
+    - make distcheck
