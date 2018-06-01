@@ -13,7 +13,11 @@ endif
 CONFIG=		libpthread						\
 		libdl							\
 		libX11							\
-		libXfixes
+		libXfixes						\
+		sigaction						\
+		<regex.h>						\
+		<sys/mman.h>
+
 
 SOURCES=	spice-streaming-agent.cpp 				\
 		concrete-agent.cpp					\
@@ -23,7 +27,9 @@ SOURCES=	spice-streaming-agent.cpp 				\
 		jpeg.cpp						\
 		stream-port.cpp						\
 		error.cpp						\
-		hexdump.c
+		hexdump.c						\
+		recorder/recorder.c					\
+		recorder/recorder_ring.c
 
 INCLUDES=	.							\
 		../include						\
@@ -36,3 +42,6 @@ DEFINES=	SPICE_STREAMING_AGENT_PROGRAM				\
 include $(MIQ)rules.mk
 $(MIQ)rules.mk:
 	cd $(TOP) && make $(TARGET)
+
+recorder/recorder.c recorder/recoder_ring.c:
+	git submodule update --init
