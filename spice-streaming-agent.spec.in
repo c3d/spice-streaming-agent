@@ -17,7 +17,8 @@ Requires(post): /usr/sbin/semanage
 Requires(postun): /usr/sbin/semanage
 
 %description
-An agent, running on a guest, sending video streams of the X display to a remote client (over Spice)
+An agent, running on a guest, sending video streams of the X display to a
+remote client (over SPICE).
 
 %package devel
 Requires: spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
@@ -55,7 +56,7 @@ fi
 
 
 %files
-%doc COPYING ChangeLog README
+%doc COPYING NEWS README
 %{_udevrulesdir}/90-spice-guest-streaming.rules
 %{_bindir}/spice-streaming-agent
 %{_sysconfdir}/xdg/autostart/spice-streaming.desktop
@@ -67,5 +68,5 @@ fi
 %{_libdir}/pkgconfig
 
 %changelog
-* Wed Aug 16 2017 Frediano Ziglio <fziglio@redhat.com>
-- Initial package
+* Wed Aug 16 2017 Frediano Ziglio <fziglio@redhat.com> - 0.1-1
+- Initial package (pre-release)
