@@ -411,8 +411,6 @@ do_capture(StreamPort &stream_port, FILE *f_log)
     }
 }
 
-#define arg_error(...) syslog(LOG_ERR, ## __VA_ARGS__);
-
 int main(int argc, char* argv[])
 {
     const char *stream_port_name = "/dev/virtio-ports/org.spice-space.stream.0";
@@ -454,7 +452,7 @@ int main(int argc, char* argv[])
         case 'c': {
             char *p = strchr(optarg, '=');
             if (p == NULL) {
-                arg_error("wrong 'c' argument %s\n", optarg);
+                syslog(LOG_ERR, "wrong 'c' argument %s\n", optarg);
                 usage(argv[0]);
             }
             *p++ = '\0';
