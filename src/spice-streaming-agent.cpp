@@ -5,8 +5,8 @@
  */
 
 #include "concrete-agent.hpp"
-#include "hexdump.h"
 #include "mjpeg-fallback.hpp"
+#include "frame-log.hpp"
 #include "stream-port.hpp"
 #include "error.hpp"
 
@@ -57,8 +57,6 @@ struct SpiceStreamDataMessage
 
 static bool streaming_requested = false;
 static bool quit_requested = false;
-static bool log_binary = false;
-static bool log_frames = false;
 static std::set<SpiceVideoCodecType> client_codecs;
 
 static bool have_something_to_read(StreamPort &stream_port, bool blocking)
@@ -221,17 +219,6 @@ static void spice_stream_send_frame(StreamPort &stream_port, const void *buf, co
     syslog(LOG_DEBUG, "Sent a frame of size %u\n", size);
 }
 
-/* returns current time in micro-seconds */
-static uint64_t get_time(void)
-{
-    struct timeval now;
-
-    gettimeofday(&now, NULL);
-
-    return (uint64_t)now.tv_sec * 1000000 + (uint64_t)now.tv_usec;
-
-}
-
 static void handle_interrupt(int intr)
 {
     syslog(LOG_INFO, "Got signal %d, exiting", intr);
@@ -330,14 +317,8 @@ static void cursor_changes(StreamPort *stream_port, Display *display, int event_
     }
 }
 
-#define STAT_LOG(format, ...) do { \
-    if (f_log && !log_binary) { \
-        fprintf(f_log, "%" PRIu64 ": " format "\n", get_time(), ## __VA_ARGS__); \
-    } \
-} while(0)
-
 static void
-do_capture(StreamPort &stream_port, FILE *f_log)
+do_capture(StreamPort &stream_port, FrameLog &frame_log)
 {
     unsigned int frame_count = 0;
     while (!quit_requested) {
@@ -361,13 +342,13 @@ do_capture(StreamPort &stream_port, FILE *f_log)
             if (++frame_count % 100 == 0) {
                 syslog(LOG_DEBUG, "SENT %d frames\n", frame_count);
             }
-            uint64_t time_before = get_time();
+            uint64_t time_before = FrameLog::get_time();
 
-            STAT_LOG("Capturing...");
+            frame_log.log_stat("Capturing...");
             FrameInfo frame = capture->CaptureFrame();
-            STAT_LOG("Captured");
+            frame_log.log_stat("Captured");
 
-            uint64_t time_after = get_time();
+            uint64_t time_after = FrameLog::get_time();
             syslog(LOG_DEBUG,
                    "got a frame -- size is %zu (%" PRIu64 " ms) "
                    "(%" PRIu64 " ms from last frame)(%" PRIu64 " us)\n",
@@ -385,18 +366,12 @@ do_capture(StreamPort &stream_port, FILE *f_log)
                 codec = capture->VideoCodecType();
 
                 syslog(LOG_DEBUG, "wXh %uX%u  codec=%u\n", width, height, codec);
-                STAT_LOG("Started new stream wXh %uX%u  codec=%u", width, height, codec);
+                frame_log.log_stat("Started new stream wXh %uX%u  codec=%u", width, height, codec);
 
                 spice_stream_send_format(stream_port, width, height, codec);
             }
-            STAT_LOG("Frame of %zu bytes:", frame.buffer_size);
-            if (f_log) {
-                if (log_binary) {
-                    fwrite(frame.buffer, frame.buffer_size, 1, f_log);
-                } else if (log_frames) {
-                    hexdump(frame.buffer, frame.buffer_size, f_log);
-                }
-            }
+            frame_log.log_stat("Frame of %zu bytes:", frame.buffer_size);
+            frame_log.log_frame(frame.buffer, frame.buffer_size);
 
             try {
                 spice_stream_send_frame(stream_port, frame.buffer, frame.buffer_size);
@@ -404,7 +379,7 @@ do_capture(StreamPort &stream_port, FILE *f_log)
                 syslog(e);
                 break;
             }
-            STAT_LOG("Sent");
+            frame_log.log_stat("Sent");
 
             read_command(stream_port, false);
         }
@@ -416,6 +391,8 @@ int main(int argc, char* argv[])
     const char *stream_port_name = "/dev/virtio-ports/org.spice-space.stream.0";
     int opt;
     const char *log_filename = NULL;
+    bool log_binary = false;
+    bool log_frames = false;
     const char *pluginsdir = PLUGINSDIR;
     enum {
         OPT_first = UCHAR_MAX,
@@ -489,20 +466,10 @@ int main(int argc, char* argv[])
 
     register_interrupts();
 
-    FILE *f_log = NULL;
-    if (log_filename) {
-        f_log = fopen(log_filename, "wb");
-        if (!f_log) {
-            syslog(LOG_ERR, "Failed to open log file '%s': %s\n",
-                   log_filename, strerror(errno));
-            return EXIT_FAILURE;
-        }
-        if (!log_binary) {
-            setlinebuf(f_log);
-        }
-        for (const std::string& arg: old_args) {
-            STAT_LOG("Args: %s", arg.c_str());
-        }
+    FrameLog frame_log(log_filename, log_binary, log_frames);
+
+    for (const std::string& arg: old_args) {
+        frame_log.log_stat("Args: %s", arg.c_str());
     }
     old_args.clear();
 
@@ -527,17 +494,13 @@ int main(int argc, char* argv[])
         std::thread cursor_th(cursor_changes, &stream_port, display, event_base);
         cursor_th.detach();
 
-        do_capture(stream_port, f_log);
+        do_capture(stream_port, frame_log);
     }
     catch (std::exception &err) {
         syslog(LOG_ERR, "%s\n", err.what());
         ret = EXIT_FAILURE;
     }
 
-    if (f_log) {
-        fclose(f_log);
-        f_log = NULL;
-    }
     closelog();
     return ret;
 }
