@@ -9,9 +9,9 @@
 #include "error.hpp"
 #include "hexdump.h"
 
+#include <chrono>
 #include <cstdarg>
 #include <string.h>
-#include <sys/time.h>
 
 
 namespace spice {
@@ -67,10 +67,8 @@ void FrameLog::log_frame(const void* buffer, size_t buffer_size)
  */
 uint64_t FrameLog::get_time()
 {
-    struct timeval now;
-    gettimeofday(&now, NULL);
-
-    return (uint64_t)now.tv_sec * 1000000 + (uint64_t)now.tv_usec;
+    auto now = std::chrono::system_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::microseconds>(now).count();
 }
 
 }} // namespace spice::streaming_agent
