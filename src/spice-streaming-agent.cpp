@@ -501,6 +501,5 @@ int main(int argc, char* argv[])
         ret = EXIT_FAILURE;
     }
 
-    closelog();
     return ret;
 }
