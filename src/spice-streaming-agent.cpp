@@ -416,7 +416,6 @@ int main(int argc, char* argv[])
     const char *stream_port_name = "/dev/virtio-ports/org.spice-space.stream.0";
     int opt;
     const char *log_filename = NULL;
-    int logmask = LOG_UPTO(LOG_WARNING);
     const char *pluginsdir = PLUGINSDIR;
     enum {
         OPT_first = UCHAR_MAX,
@@ -436,7 +435,7 @@ int main(int argc, char* argv[])
     openlog("spice-streaming-agent",
             isatty(fileno(stderr)) ? (LOG_PERROR|LOG_PID) : LOG_PID, LOG_USER);
 
-    setlogmask(logmask);
+    setlogmask(LOG_UPTO(LOG_WARNING));
 
     while ((opt = getopt_long(argc, argv, "hp:c:l:d", long_options, NULL)) != -1) {
         switch (opt) {
@@ -475,8 +474,7 @@ int main(int argc, char* argv[])
             log_filename = optarg;
             break;
         case 'd':
-            logmask = LOG_UPTO(LOG_DEBUG);
-            setlogmask(logmask);
+            setlogmask(LOG_UPTO(LOG_DEBUG));
             break;
         case 'h':
             usage(argv[0]);
