@@ -452,7 +452,7 @@ int main(int argc, char* argv[])
         case 'c': {
             char *p = strchr(optarg, '=');
             if (p == NULL) {
-                syslog(LOG_ERR, "wrong 'c' argument %s\n", optarg);
+                syslog(LOG_ERR, "Invalid '-c' argument value: %s", optarg);
                 usage(argv[0]);
             }
             *p++ = '\0';
