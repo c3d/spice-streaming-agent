@@ -459,8 +459,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    int ret = EXIT_SUCCESS;
-
     try {
         // register built-in plugins
         MjpegPlugin::Register(&agent);
@@ -478,13 +476,12 @@ int main(int argc, char* argv[])
 
         Display *display = XOpenDisplay(NULL);
         if (display == NULL) {
-            syslog(LOG_ERR, "failed to open display\n");
-            return EXIT_FAILURE;
+            throw Error("Failed to open X display");
         }
+
         int event_base, error_base;
         if (!XFixesQueryExtension(display, &event_base, &error_base)) {
-            syslog(LOG_ERR, "XFixesQueryExtension failed\n");
-            return EXIT_FAILURE;
+            throw Error("XFixesQueryExtension failed");
         }
         Window rootwindow = DefaultRootWindow(display);
         XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
@@ -498,8 +495,8 @@ int main(int argc, char* argv[])
     }
     catch (std::exception &err) {
         syslog(LOG_ERR, "%s\n", err.what());
-        ret = EXIT_FAILURE;
+        return EXIT_FAILURE;
     }
 
-    return ret;
+    return EXIT_SUCCESS;
 }
