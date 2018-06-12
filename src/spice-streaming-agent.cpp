@@ -459,36 +459,36 @@ int main(int argc, char* argv[])
         }
     }
 
-    // register built-in plugins
-    MjpegPlugin::Register(&agent);
-
-    agent.LoadPlugins(pluginsdir);
-
-    register_interrupts();
-
-    FrameLog frame_log(log_filename, log_binary, log_frames);
-
-    for (const std::string& arg: old_args) {
-        frame_log.log_stat("Args: %s", arg.c_str());
-    }
-    old_args.clear();
-
-    Display *display = XOpenDisplay(NULL);
-    if (display == NULL) {
-        syslog(LOG_ERR, "failed to open display\n");
-        return EXIT_FAILURE;
-    }
-    int event_base, error_base;
-    if (!XFixesQueryExtension(display, &event_base, &error_base)) {
-        syslog(LOG_ERR, "XFixesQueryExtension failed\n");
-        return EXIT_FAILURE;
-    }
-    Window rootwindow = DefaultRootWindow(display);
-    XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
-
     int ret = EXIT_SUCCESS;
 
     try {
+        // register built-in plugins
+        MjpegPlugin::Register(&agent);
+
+        agent.LoadPlugins(pluginsdir);
+
+        register_interrupts();
+
+        FrameLog frame_log(log_filename, log_binary, log_frames);
+
+        for (const std::string& arg: old_args) {
+            frame_log.log_stat("Args: %s", arg.c_str());
+        }
+        old_args.clear();
+
+        Display *display = XOpenDisplay(NULL);
+        if (display == NULL) {
+            syslog(LOG_ERR, "failed to open display\n");
+            return EXIT_FAILURE;
+        }
+        int event_base, error_base;
+        if (!XFixesQueryExtension(display, &event_base, &error_base)) {
+            syslog(LOG_ERR, "XFixesQueryExtension failed\n");
+            return EXIT_FAILURE;
+        }
+        Window rootwindow = DefaultRootWindow(display);
+        XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
+
         StreamPort stream_port(stream_port_name);
 
         std::thread cursor_th(cursor_changes, &stream_port, display, event_base);
