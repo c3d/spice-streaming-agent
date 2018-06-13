@@ -35,8 +35,9 @@ INCLUDES=	.							\
 		../include						\
 		$(SPICE_PROTOCOL)
 
+PLUGINSDIR=	$(PREFIX_LIB)spice-streaming-agent/plugins
 DEFINES=	SPICE_STREAMING_AGENT_PROGRAM				\
-		PLUGINSDIR=\"$(PREFIX_LIB)spice-streaming-agent\"	\
+		PLUGINSDIR=\"$(PLUGINSDIR)\"				\
 		VERSION=\"$(PACKAGE_VERSION)\"
 
 include $(MIQ)rules.mk
