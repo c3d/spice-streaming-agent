@@ -39,6 +39,8 @@
 #include <vector>
 #include <string>
 
+RECORDER_DEFINE(main, 32, "SPICE streaming agent main");
+
 using namespace spice::streaming_agent;
 
 static ConcreteAgent agent;
@@ -325,6 +327,10 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
 int main(int argc, char* argv[])
 {
     recorder_dump_on_common_signals(0,0);
+    record(main, "Entering SPICE streaming agent %+s with %d args", argv[0], argc);
+    for (int i = 1; i < argc; i++) {
+        record(main, "   Arg #%d: %+s", i, argv[i]);
+    }
 
     const char *stream_port_name = "/dev/virtio-ports/org.spice-space.stream.0";
     int opt;
