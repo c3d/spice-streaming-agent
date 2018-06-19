@@ -5,6 +5,10 @@ PRODUCTS=	spice-streaming-agent.exe
 
 PKGCONFIGS=	libjpeg
 
+ifndef SPICE_PROTOCOL
+PKGCONFIGS+=	spice-protocol
+endif
+
 CONFIG=		libpthread						\
 		libdl							\
 		libX11							\
@@ -20,7 +24,7 @@ SOURCES=	spice-streaming-agent.cpp 				\
 
 INCLUDES=	.							\
 		../include						\
-		$(TOP)protocol						\
+		$(SPICE_PROTOCOL)					\
 		$(INCLUDES_$(OS_NAME))
 INCLUDES_macosx=/usr/X11/include
 
