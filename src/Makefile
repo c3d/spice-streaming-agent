@@ -3,7 +3,8 @@ MIQ=$(TOP)make-it-quick/
 
 PRODUCTS=	spice-streaming-agent.exe
 
-PKGCONFIGS=	libjpeg
+PKGCONFIGS=	libjpeg							\
+		x11
 
 ifndef SPICE_PROTOCOL
 PKGCONFIGS+=	spice-protocol
@@ -24,15 +25,10 @@ SOURCES=	spice-streaming-agent.cpp 				\
 
 INCLUDES=	.							\
 		../include						\
-		$(SPICE_PROTOCOL)					\
-		$(INCLUDES_$(OS_NAME))
-INCLUDES_macosx=/usr/X11/include
+		$(SPICE_PROTOCOL)
 
 DEFINES=	SPICE_STREAMING_AGENT_PROGRAM				\
 		PLUGINSDIR=\"$(PREFIX_LIB)spice-streaming-agent\"	\
-
-LDFLAGS +=	$(LDFLAGS_$(OS_NAME))
-LDFLAGS_macosx=	-L/usr/X11/lib
 
 include $(MIQ)rules.mk
 $(MIQ)rules.mk:
