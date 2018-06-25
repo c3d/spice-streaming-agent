@@ -459,13 +459,13 @@ int main(int argc, char* argv[])
         }
     }
 
+    register_interrupts();
+
     try {
         // register built-in plugins
         MjpegPlugin::Register(&agent);
 
         agent.LoadPlugins(pluginsdir);
-
-        register_interrupts();
 
         FrameLog frame_log(log_filename, log_binary, log_frames);
 
