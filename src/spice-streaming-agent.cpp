@@ -90,7 +90,7 @@ static void handle_stream_start_stop(StreamPort &stream_port, uint32_t len)
 
     stream_port.read(msg, len);
     streaming_requested = (msg[0] != 0); /* num_codecs */
-    syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming\n",
+    syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming",
            streaming_requested ? "START" : "STOP");
     client_codecs.clear();
     for (int i = 1; i <= msg[0]; ++i) {
@@ -135,7 +135,7 @@ static void handle_stream_error(StreamPort &stream_port, size_t len)
     stream_port.read(&msg, len_to_read);
     msg.msg[len_to_read - sizeof(StreamMsgNotifyError)] = '\0';
 
-    syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s\n",
+    syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s",
         msg.error_code, msg.msg);
 
     if (len_to_read < len) {
@@ -197,7 +197,7 @@ static void spice_stream_send_format(StreamPort &stream_port, unsigned w, unsign
     msg.msg.height = h;
     msg.msg.codec = c;
 
-    syslog(LOG_DEBUG, "writing format\n");
+    syslog(LOG_DEBUG, "writing format");
     std::lock_guard<std::mutex> guard(stream_port.mutex);
     stream_port.write(&msg, msgsize);
 }
@@ -216,7 +216,7 @@ static void spice_stream_send_frame(StreamPort &stream_port, const void *buf, co
     stream_port.write(&msg, msgsize);
     stream_port.write(buf, size);
 
-    syslog(LOG_DEBUG, "Sent a frame of size %u\n", size);
+    syslog(LOG_DEBUG, "Sent a frame of size %u", size);
 }
 
 static void handle_interrupt(int intr)
@@ -330,7 +330,7 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
             return;
         }
 
-        syslog(LOG_INFO, "streaming starts now\n");
+        syslog(LOG_INFO, "streaming starts now");
         uint64_t time_last = 0;
 
         std::unique_ptr<FrameCapture> capture(agent.GetBestFrameCapture(client_codecs));
@@ -340,7 +340,7 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
 
         while (!quit_requested && streaming_requested) {
             if (++frame_count % 100 == 0) {
-                syslog(LOG_DEBUG, "SENT %d frames\n", frame_count);
+                syslog(LOG_DEBUG, "SENT %d frames", frame_count);
             }
             uint64_t time_before = FrameLog::get_time();
 
@@ -365,7 +365,7 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
                 height = frame.size.height;
                 codec = capture->VideoCodecType();
 
-                syslog(LOG_DEBUG, "wXh %uX%u  codec=%u\n", width, height, codec);
+                syslog(LOG_DEBUG, "wXh %uX%u  codec=%u", width, height, codec);
                 frame_log.log_stat("Started new stream wXh %uX%u codec=%u", width, height, codec);
 
                 spice_stream_send_format(stream_port, width, height, codec);
@@ -494,7 +494,7 @@ int main(int argc, char* argv[])
         do_capture(stream_port, frame_log);
     }
     catch (std::exception &err) {
-        syslog(LOG_ERR, "%s\n", err.what());
+        syslog(LOG_ERR, "%s", err.what());
         return EXIT_FAILURE;
     }
 

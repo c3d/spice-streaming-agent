@@ -185,7 +185,7 @@ bool MjpegPlugin::Register(Agent* agent)
     try {
         plugin->ParseOptions(agent->Options());
     } catch (const std::exception &e) {
-        syslog(LOG_ERR, "Error parsing plugin option: %s\n", e.what());
+        syslog(LOG_ERR, "Error parsing plugin option: %s", e.what());
     }
 
     agent->Register(*plugin.release());
