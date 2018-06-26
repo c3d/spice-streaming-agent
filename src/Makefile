@@ -29,6 +29,7 @@ INCLUDES=	.							\
 
 DEFINES=	SPICE_STREAMING_AGENT_PROGRAM				\
 		PLUGINSDIR=\"$(PREFIX_LIB)spice-streaming-agent\"	\
+		VERSION=\"$(PACKAGE_VERSION)\"
 
 include $(MIQ)rules.mk
 $(MIQ)rules.mk:
