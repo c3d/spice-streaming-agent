@@ -344,9 +344,9 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
             }
             uint64_t time_before = FrameLog::get_time();
 
-            frame_log.log_stat("Capturing...");
+            frame_log.log_stat("Capturing frame...");
             FrameInfo frame = capture->CaptureFrame();
-            frame_log.log_stat("Captured");
+            frame_log.log_stat("Captured frame");
 
             uint64_t time_after = FrameLog::get_time();
             syslog(LOG_DEBUG,
@@ -366,11 +366,11 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
                 codec = capture->VideoCodecType();
 
                 syslog(LOG_DEBUG, "wXh %uX%u  codec=%u\n", width, height, codec);
-                frame_log.log_stat("Started new stream wXh %uX%u  codec=%u", width, height, codec);
+                frame_log.log_stat("Started new stream wXh %uX%u codec=%u", width, height, codec);
 
                 spice_stream_send_format(stream_port, width, height, codec);
             }
-            frame_log.log_stat("Frame of %zu bytes:", frame.buffer_size);
+            frame_log.log_stat("Frame of %zu bytes", frame.buffer_size);
             frame_log.log_frame(frame.buffer, frame.buffer_size);
 
             try {
@@ -379,7 +379,7 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
                 syslog(e);
                 break;
             }
-            frame_log.log_stat("Sent");
+            frame_log.log_stat("Sent frame");
 
             read_command(stream_port, false);
         }
