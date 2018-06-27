@@ -412,7 +412,7 @@ int main(int argc, char* argv[])
     openlog("spice-streaming-agent",
             isatty(fileno(stderr)) ? (LOG_PERROR|LOG_PID) : LOG_PID, LOG_USER);
 
-    setlogmask(LOG_UPTO(LOG_WARNING));
+    setlogmask(LOG_UPTO(LOG_NOTICE));
 
     while ((opt = getopt_long(argc, argv, "hp:c:l:d", long_options, NULL)) != -1) {
         switch (opt) {
