@@ -7,6 +7,9 @@ SRC_AUTOSTART=	src/$(AUTOSTART)
 XDG_AUTOSTART=	$(SYSCONFIG)xdg/autostart/$(AUTOSTART)
 GDM_AUTOSTART=	$(PREFIX_SHARE)gdm/greeter/autostart/$(AUTOSTART)
 
+HEADERS=	$(wildcard include/spice-streaming-agent/*.hpp)
+PREFIX_HDR=	$(PREFIX)include/spice-streaming-agent/
+
 include $(MIQ)rules.mk
 $(MIQ)rules.mk:
 	git clone http://github.com/c3d/make-it-quick
