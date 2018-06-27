@@ -108,6 +108,7 @@ static void handle_stream_capabilities(StreamPort &stream_port, uint32_t len)
         throw std::runtime_error("capability message too long");
     }
 
+    record(main, "Reading capabilities len %u", len);
     stream_port.read(caps, len);
     // we currently do not support extensions so just reply so
     StreamDevHeader hdr = {
@@ -117,7 +118,9 @@ static void handle_stream_capabilities(StreamPort &stream_port, uint32_t len)
         0
     };
 
+    record(main, "Writing capabilities size %u", sizeof(hdr));
     stream_port.write(&hdr, sizeof(hdr));
+    record(main, "Wrote capabilities");
 }
 
 static void handle_stream_error(StreamPort &stream_port, size_t len)
@@ -170,6 +173,7 @@ static void read_command_from_device(StreamPort &stream_port)
                                  " (expected is " + std::to_string(STREAM_DEVICE_PROTOCOL) + ")");
     }
 
+    record(main, "Read header type %u", hdr.type);
     switch (hdr.type) {
     case STREAM_TYPE_CAPABILITIES:
         return handle_stream_capabilities(stream_port, hdr.size);
