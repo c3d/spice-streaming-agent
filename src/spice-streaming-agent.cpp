@@ -6,6 +6,7 @@
 
 #include "concrete-agent.hpp"
 #include "mjpeg-fallback.hpp"
+#include "cursor-updater.hpp"
 #include "frame-log.hpp"
 #include "stream-port.hpp"
 #include "error.hpp"
@@ -35,9 +36,6 @@
 #include <thread>
 #include <vector>
 #include <string>
-#include <functional>
-#include <X11/Xlib.h>
-#include <X11/extensions/Xfixes.h>
 
 using namespace spice::streaming_agent;
 
@@ -254,70 +252,6 @@ static void usage(const char *progname)
 }
 
 static void
-send_cursor(StreamPort &stream_port, unsigned width, unsigned height, int hotspot_x, int hotspot_y,
-            std::function<void(uint32_t *)> fill_cursor)
-{
-    if (width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH || height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
-        return;
-    }
-
-    size_t cursor_size =
-        sizeof(StreamDevHeader) + sizeof(StreamMsgCursorSet) +
-        width * height * sizeof(uint32_t);
-    std::unique_ptr<uint8_t[]> msg(new uint8_t[cursor_size]);
-
-    StreamDevHeader &dev_hdr(*reinterpret_cast<StreamDevHeader*>(msg.get()));
-    memset(&dev_hdr, 0, sizeof(dev_hdr));
-    dev_hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
-    dev_hdr.type = STREAM_TYPE_CURSOR_SET;
-    dev_hdr.size = cursor_size - sizeof(StreamDevHeader);
-
-    StreamMsgCursorSet &cursor_msg(*reinterpret_cast<StreamMsgCursorSet *>(msg.get() + sizeof(StreamDevHeader)));
-    memset(&cursor_msg, 0, sizeof(cursor_msg));
-
-    cursor_msg.type = SPICE_CURSOR_TYPE_ALPHA;
-    cursor_msg.width = width;
-    cursor_msg.height = height;
-    cursor_msg.hot_spot_x = hotspot_x;
-    cursor_msg.hot_spot_y = hotspot_y;
-
-    uint32_t *pixels = reinterpret_cast<uint32_t *>(cursor_msg.data);
-    fill_cursor(pixels);
-
-    std::lock_guard<std::mutex> guard(stream_port.mutex);
-    stream_port.write(msg.get(), cursor_size);
-}
-
-static void cursor_changes(StreamPort *stream_port, Display *display, int event_base)
-{
-    unsigned long last_serial = 0;
-
-    while (1) {
-        XEvent event;
-        XNextEvent(display, &event);
-        if (event.type != event_base + 1) {
-            continue;
-        }
-
-        XFixesCursorImage *cursor = XFixesGetCursorImage(display);
-        if (!cursor) {
-            continue;
-        }
-
-        if (cursor->cursor_serial == last_serial) {
-            continue;
-        }
-
-        last_serial = cursor->cursor_serial;
-        auto fill_cursor = [cursor](uint32_t *pixels) {
-            for (unsigned i = 0; i < cursor->width * cursor->height; ++i)
-                pixels[i] = cursor->pixels[i];
-        };
-        send_cursor(*stream_port, cursor->width, cursor->height, cursor->xhot, cursor->yhot, fill_cursor);
-    }
-}
-
-static void
 do_capture(StreamPort &stream_port, FrameLog &frame_log)
 {
     unsigned int frame_count = 0;
@@ -474,22 +408,10 @@ int main(int argc, char* argv[])
         }
         old_args.clear();
 
-        Display *display = XOpenDisplay(NULL);
-        if (display == NULL) {
-            throw Error("Failed to open X display");
-        }
-
-        int event_base, error_base;
-        if (!XFixesQueryExtension(display, &event_base, &error_base)) {
-            throw Error("XFixesQueryExtension failed");
-        }
-        Window rootwindow = DefaultRootWindow(display);
-        XFixesSelectCursorInput(display, rootwindow, XFixesDisplayCursorNotifyMask);
-
         StreamPort stream_port(stream_port_name);
 
-        std::thread cursor_th(cursor_changes, &stream_port, display, event_base);
-        cursor_th.detach();
+        std::thread cursor_updater{CursorUpdater(&stream_port)};
+        cursor_updater.detach();
 
         do_capture(stream_port, frame_log);
     }

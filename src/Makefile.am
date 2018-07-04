@@ -52,6 +52,8 @@ spice_streaming_agent_SOURCES = \
 	spice-streaming-agent.cpp \
 	concrete-agent.cpp \
 	concrete-agent.hpp \
+	cursor-updater.cpp \
+	cursor-updater.hpp \
 	error.cpp \
 	error.hpp \
 	frame-log.cpp \
