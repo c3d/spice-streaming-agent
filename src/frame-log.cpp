@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cstdarg>
 #include <string.h>
+#include <errno.h>
 
 
 namespace spice {
