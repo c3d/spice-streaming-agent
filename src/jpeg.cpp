@@ -23,7 +23,7 @@ struct JpegBuffer: public jpeg_destination_mgr
 static boolean buf_empty_output_buffer(j_compress_ptr cinfo)
 {
     JpegBuffer *buf = (JpegBuffer *) cinfo->dest;
-    size_t size = buf->next_output_byte - &buf->buffer[0];
+    size_t size = buf->buffer.size();
     buf->buffer.resize(buf->buffer.capacity() * 2);
     buf->next_output_byte = &buf->buffer[0] + size;
     buf->free_in_buffer = buf->buffer.size() - size;
