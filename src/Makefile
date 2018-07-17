@@ -17,6 +17,8 @@ CONFIG=		libpthread						\
 
 SOURCES=	spice-streaming-agent.cpp 				\
 		concrete-agent.cpp					\
+		cursor-updater.cpp 					\
+		frame-log.cpp	 					\
 		mjpeg-fallback.cpp					\
 		jpeg.cpp						\
 		stream-port.cpp						\
