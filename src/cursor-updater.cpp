@@ -74,7 +74,7 @@ CursorUpdater::CursorUpdater(StreamPort *stream_port) : stream_port(stream_port)
     XFixesSelectCursorInput(display, DefaultRootWindow(display), XFixesDisplayCursorNotifyMask);
 }
 
-[[noreturn]] void CursorUpdater::operator()()
+void CursorUpdater::operator()()
 {
     unsigned long last_serial = 0;
 
