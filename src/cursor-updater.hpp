@@ -21,7 +21,7 @@ class CursorUpdater
 public:
     CursorUpdater(StreamPort *stream_port);
 
-    void operator()();
+    [[noreturn]] void operator()();
 
 private:
     StreamPort *stream_port;
