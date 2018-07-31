@@ -91,6 +91,11 @@ static void handle_stream_start_stop(StreamPort &stream_port, uint32_t len)
     syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming",
            streaming_requested ? "START" : "STOP");
     client_codecs.clear();
+    const int max_codecs = len - 1; /* see struct StreamMsgStartStop */
+    if (msg[0] > max_codecs) {
+        throw std::runtime_error("num_codecs=" + std::to_string(msg[0]) +
+                                 " > max_codecs=" + std::to_string(max_codecs));
+    }
     for (int i = 1; i <= msg[0]; ++i) {
         client_codecs.insert((SpiceVideoCodecType) msg[i]);
     }
