@@ -88,6 +88,7 @@ void ConcreteAgent::LoadPlugin(const std::string &plugin_filename)
     if (!version) {
         syslog(LOG_ERR, "error loading plugin %s: no version information",
                plugin_filename.c_str());
+        dlclose(dl);
         return;
     }
     if (!PluginVersionIsCompatible(*version)) {
@@ -95,6 +96,7 @@ void ConcreteAgent::LoadPlugin(const std::string &plugin_filename)
                "error loading plugin %s: plugin interface version %u.%u not accepted",
                plugin_filename.c_str(),
                MajorVersion(*version), MinorVersion(*version));
+        dlclose(dl);
         return;
     }
 
