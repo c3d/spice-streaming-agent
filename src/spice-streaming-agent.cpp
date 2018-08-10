@@ -149,6 +149,7 @@ static void handle_stream_error(StreamPort &stream_port, size_t len)
     }
 }
 
+RECORDER_DEFINE(adjust, 32, "Dynamic value adjustments");
 static void handle_stream_adjust_encoding_parameters(StreamPort &stream_port, uint32_t len)
 {
     StreamMsgAdjustEncodingParameters msg;
@@ -159,6 +160,9 @@ static void handle_stream_adjust_encoding_parameters(StreamPort &stream_port, ui
     }
 
     stream_port.read(&msg, len);
+    uint32_t id = msg.parameter_id;
+    uint32_t value = msg.parameter_value;
+    agent.AdjustParameter(id, value);
 }
 
 static void read_command_from_device(StreamPort &stream_port)
