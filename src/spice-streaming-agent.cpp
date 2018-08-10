@@ -162,6 +162,18 @@ static void handle_stream_adjust_encoding_parameters(StreamPort &stream_port, ui
     stream_port.read(&msg, len);
     uint32_t id = msg.parameter_id;
     uint32_t value = msg.parameter_value;
+    static const char *parameter_name[STREAM_MSG_PARAMETER_COUNT] = {
+        [STREAM_MSG_PARAMETER_INVALID]                  = "PARAMETER_INVALID",
+        [STREAM_MSG_PARAMETER_FRAMES_PER_SECOND]        = "PARAMETER_FRAMES_PER_SECOND",
+        [STREAM_MSG_PARAMETER_MAX_BYTES_PER_SECOND]     = "PARAMETER_MAX_BYTES_PER_SECOND",
+        [STREAM_MSG_PARAMETER_AVERAGE_BYTES_PER_SECOND] = "PARAMETER_AVERAGE_BYTES_PER_SECOND",
+        [STREAM_MSG_PARAMETER_GROUP_OF_PICTURE_SIZE]    = "PARAMETER_GROUP_OF_PICTURE_SIZE",
+        [STREAM_MSG_PARAMETER_QUALITY]                  = "PARAMETER_QUALITY",
+
+    };
+    record(adjust, "Adjusting parameters %+s (%u) value %u",
+           id < STREAM_MSG_PARAMETER_COUNT ? parameter_name[id] : "Unknown",
+           id, value);
     agent.AdjustParameter(id, value);
 }
 
