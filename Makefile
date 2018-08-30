@@ -2,8 +2,8 @@ MIQ=make-it-quick/
 
 SUBDIRS=src
 
-AUTOSTART=	spice-streaming.deskop
-SRC_AUTOSTART=	src/$(AUTOSTART)
+AUTOSTART=	spice-streaming.desktop
+SRC_AUTOSTART=	data/$(AUTOSTART)
 XDG_AUTOSTART=	$(SYSCONFIG)xdg/autostart/$(AUTOSTART)
 GDM_AUTOSTART=	$(PREFIX_SHARE)gdm/greeter/autostart/$(AUTOSTART)
 
@@ -17,3 +17,5 @@ $(MIQ)rules.mk:
 install: $(XDG_AUTOSTART) $(GDM_AUTOSTART)
 $(XDG_AUTOSTART) $(GDM_AUTOSTART): $(SRC_AUTOSTART)
 	$(PRINT_INSTALL) $< $@
+$(SRC_AUTOSTART): $(SRC_AUTOSTART).in
+	$(PRINT_GENERATE) sed -e 's|@BINDIR@|$(PREFIX_BIN)|g' < $< > $@
