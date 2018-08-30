@@ -17,6 +17,8 @@
 #include <spice-streaming-agent/frame-capture.hpp>
 #include <spice-streaming-agent/plugin.hpp>
 
+#include <recorder/recorder.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
