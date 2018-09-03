@@ -3,8 +3,8 @@ MIQ=$(TOP)make-it-quick/
 
 PRODUCTS=	spice-streaming-agent.exe
 
-PKGCONFIGS=	libjpeg							\
-		x11
+PKGCONFIGS=	libjpeg?						\
+		x11?
 
 ifndef SPICE_PROTOCOL
 PKGCONFIGS+=	spice-protocol
@@ -14,6 +14,7 @@ CONFIG=		libpthread						\
 		libdl							\
 		libX11							\
 		libXfixes						\
+		libjpeg							\
 		sigaction						\
 		<regex.h>						\
 		<sys/mman.h>
