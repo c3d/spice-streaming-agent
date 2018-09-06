@@ -60,6 +60,20 @@ AC_ARG_WITH(udevrulesdir,
 )
 AC_SUBST(UDEVRULESDIR)
 
+AC_ARG_ENABLE([gst-plugin],
+              AS_HELP_STRING([--enable-gst-plugin=@<:@auto/yes/no@:>@],
+                             [Enable GStreamer based plugin]),,
+              [enable_gst_plugin="no"])
+if test "$enable_gst_plugin" != "no"; then
+    PKG_CHECK_MODULES(GST, [gstreamer-1.0 gstreamer-app-1.0], [enable_gst_plugin=yes],
+        [if test "$enable_gst_plugin" = "yes"; then
+             AC_MSG_ERROR([Gstreamer libs are missing])
+         fi
+         enable_gst_plugin=no
+    ])
+fi
+AM_CONDITIONAL([HAVE_GST],[test "$enable_gst_plugin" = "yes"])
+
 dnl ===========================================================================
 dnl check compiler flags
 
@@ -129,6 +143,7 @@ AC_MSG_NOTICE([
         prefix:                   ${prefix}
         C compiler:               ${CC}
         C++ compiler:             ${CXX}
+        Gstreamer plugin:         ${enable_gst_plugin}
 
         Now type 'make' to build $PACKAGE
 ])

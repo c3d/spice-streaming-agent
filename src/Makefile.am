@@ -9,6 +9,9 @@ if ENABLE_TESTS
 SUBDIRS = . unittests
 endif
 
+plugin_LTLIBRARIES =
+plugindir = $(pkglibdir)/plugins
+
 AM_CPPFLAGS = \
 	-DSPICE_STREAMING_AGENT_PROGRAM \
 	-I$(top_srcdir)/include \
@@ -65,3 +68,27 @@ spice_streaming_agent_SOURCES = \
 	stream-port.cpp \
 	stream-port.hpp \
 	$(NULL)
+
+if HAVE_GST
+plugin_LTLIBRARIES += gst-plugin.la
+
+gst_plugin_la_LDFLAGS = \
+	-module -avoid-version \
+	$(RELRO_LDFLAGS) \
+	$(NO_INDIRECT_LDFLAGS) \
+	$(NULL)
+
+gst_plugin_la_LIBADD = \
+	$(GST_LIBS) \
+	$(NULL)
+
+gst_plugin_la_SOURCES = \
+	gst-plugin.cpp \
+	$(NULL)
+
+gst_plugin_la_CPPFLAGS = \
+	-I$(top_srcdir)/include \
+	$(SPICE_PROTOCOL_CFLAGS) \
+	$(GST_CFLAGS) \
+	$(NULL)
+endif
