@@ -37,9 +37,9 @@ bool ConcreteAgent::PluginVersionIsCompatible(unsigned pluginVersion) const
         MinorVersion(version) >= MinorVersion(pluginVersion);
 }
 
-void ConcreteAgent::Register(Plugin& plugin)
+void ConcreteAgent::Register(const std::shared_ptr<Plugin>& plugin)
 {
-    plugins.push_back(std::shared_ptr<Plugin>(&plugin));
+    plugins.push_back(plugin);
 }
 
 const ConfigureOption* ConcreteAgent::Options() const

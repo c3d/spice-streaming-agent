@@ -27,7 +27,7 @@ class ConcreteAgent final : public Agent
 {
 public:
     ConcreteAgent();
-    void Register(Plugin& plugin) override;
+    void Register(const std::shared_ptr<Plugin>& plugin) override;
     const ConfigureOption* Options() const override;
     void LoadPlugins(const std::string &directory);
     // pointer must remain valid

@@ -8,6 +8,7 @@
 #define SPICE_STREAMING_AGENT_PLUGIN_HPP
 
 #include <spice/enums.h>
+#include <memory>
 
 /*!
  * \file
@@ -104,8 +105,9 @@ class Agent
 public:
     /*!
      * Register a plugin in the system.
+     * Agent will take ownership of the plugin.
      */
-    virtual void Register(Plugin& plugin) = 0;
+    virtual void Register(const std::shared_ptr<Plugin>& plugin) = 0;
 
     /*!
      * Get options array.

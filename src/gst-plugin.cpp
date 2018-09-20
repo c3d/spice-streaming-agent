@@ -452,11 +452,11 @@ SPICE_STREAMING_AGENT_PLUGIN(agent)
 {
     gst_init(nullptr, nullptr);
 
-    std::unique_ptr<GstreamerPlugin> plugin(new GstreamerPlugin());
+    auto plugin = std::make_shared<GstreamerPlugin>();
 
     plugin->ParseOptions(agent->Options());
 
-    agent->Register(*plugin.release());
+    agent->Register(plugin);
 
     return true;
 }
