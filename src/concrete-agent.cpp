@@ -5,13 +5,15 @@
  */
 
 #include <config.h>
+#include "concrete-agent.hpp"
+#include "frame-log.hpp"
+
 #include <algorithm>
 #include <syslog.h>
 #include <glob.h>
 #include <dlfcn.h>
 #include <string>
-
-#include "concrete-agent.hpp"
+#include <cstdarg>
 
 using namespace spice::streaming_agent;
 
@@ -25,8 +27,9 @@ static inline unsigned MinorVersion(unsigned version)
     return version & 0xffu;
 }
 
-ConcreteAgent::ConcreteAgent(const std::vector<ConcreteConfigureOption> &options):
-    options(options)
+ConcreteAgent::ConcreteAgent(const std::vector<ConcreteConfigureOption> &options, FrameLog *logger):
+    options(options),
+    logger(logger)
 {
     this->options.push_back(ConcreteConfigureOption(nullptr, nullptr));
 }
@@ -139,4 +142,14 @@ FrameCapture *ConcreteAgent::GetBestFrameCapture(const std::set<SpiceVideoCodecT
         }
     }
     return nullptr;
+}
+
+void ConcreteAgent::LogStat(const char* format, ...)
+{
+    if (logger) {
+        va_list ap;
+        va_start(ap, format);
+        logger->log_statv(format, ap);
+        va_end(ap);
+    }
 }

@@ -42,12 +42,17 @@ FrameLog::~FrameLog()
 
 void FrameLog::log_stat(const char* format, ...)
 {
+    va_list ap;
+    va_start(ap, format);
+    log_statv(format, ap);
+    va_end(ap);
+}
+
+void FrameLog::log_statv(const char* format, va_list ap)
+{
     if (log_file && !log_binary) {
         fprintf(log_file, "%" PRIu64 ": ", get_time());
-        va_list ap;
-        va_start(ap, format);
         vfprintf(log_file, format, ap);
-        va_end(ap);
         fputc('\n', log_file);
     }
 }

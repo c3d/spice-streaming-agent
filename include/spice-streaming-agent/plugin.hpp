@@ -28,7 +28,7 @@ class FrameCapture;
  * where MM is major and mm is the minor, can be easily expanded
  * using more bits in the future
  */
-enum Constants : unsigned { PluginVersion = 0x100u };
+enum Constants : unsigned { PluginVersion = 0x101u };
 
 enum Ranks : unsigned {
     /// this plugin should not be used
@@ -116,6 +116,11 @@ public:
      * \todo passing options to entry point instead?
      */
     virtual const ConfigureOption* Options() const = 0;
+    /*!
+     * Write something in the log.
+     */
+    __attribute__ ((format (printf, 2, 3)))
+    virtual void LogStat(const char* format, ...) = 0;
 };
 
 typedef bool PluginInitFunc(spice::streaming_agent::Agent* agent);

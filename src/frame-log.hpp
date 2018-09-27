@@ -24,6 +24,8 @@ public:
 
     __attribute__ ((format (printf, 2, 3)))
     void log_stat(const char* format, ...);
+    __attribute__ ((format (printf, 2, 0)))
+    void log_statv(const char* format, va_list ap);
     void log_frame(const void* buffer, size_t buffer_size);
 
     static uint64_t get_time();

@@ -401,14 +401,14 @@ int main(int argc, char* argv[])
     register_interrupts();
 
     try {
-        ConcreteAgent agent(options);
+        FrameLog frame_log(log_filename, log_binary, log_frames);
+
+        ConcreteAgent agent(options, &frame_log);
 
         // register built-in plugins
         MjpegPlugin::Register(&agent);
 
         agent.LoadPlugins(pluginsdir);
-
-        FrameLog frame_log(log_filename, log_binary, log_frames);
 
         for (const std::string& arg: old_args) {
             frame_log.log_stat("Args: %s", arg.c_str());
