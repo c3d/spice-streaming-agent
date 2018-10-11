@@ -23,7 +23,7 @@ public:
     void read(void *buf, size_t len);
     void write(const void *buf, size_t len);
 
-    int fd;
+    const int fd;
     std::mutex mutex;
 };
 
