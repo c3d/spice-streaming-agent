@@ -41,16 +41,55 @@ using namespace spice::streaming_agent;
 
 static ConcreteAgent agent;
 
-struct SpiceStreamFormatMessage
+class FormatMessage : public OutboundMessage<StreamMsgFormat, FormatMessage, STREAM_TYPE_FORMAT>
 {
-    StreamDevHeader hdr;
-    StreamMsgFormat msg;
+public:
+    FormatMessage(unsigned w, unsigned h, uint8_t c) {}
+
+    static size_t size()
+    {
+        return sizeof(PayloadType);
+    }
+
+    void write_message_body(StreamPort &stream_port, unsigned w, unsigned h, uint8_t c)
+    {
+        StreamMsgFormat msg{};
+        msg.width = w;
+        msg.height = h;
+        msg.codec = c;
+
+        stream_port.write(&msg, sizeof(msg));
+    }
 };
 
-struct SpiceStreamDataMessage
+class FrameMessage : public OutboundMessage<StreamMsgData, FrameMessage, STREAM_TYPE_DATA>
 {
-    StreamDevHeader hdr;
-    StreamMsgData msg;
+public:
+    FrameMessage(const void *frame, size_t length) : OutboundMessage(length) {}
+
+    static size_t size(size_t length)
+    {
+        return sizeof(PayloadType) + length;
+    }
+
+    void write_message_body(StreamPort &stream_port, const void *frame, size_t length)
+    {
+        stream_port.write(frame, length);
+    }
+};
+
+class CapabilitiesOutMessage : public OutboundMessage<StreamMsgCapabilities, CapabilitiesOutMessage, STREAM_TYPE_CAPABILITIES>
+{
+public:
+    static size_t size()
+    {
+        return sizeof(PayloadType);
+    }
+
+    void write_message_body(StreamPort &stream_port)
+    {
+        // No body for capabilities message
+    }
 };
 
 static bool streaming_requested = false;
@@ -83,15 +122,7 @@ static void read_command_from_device(StreamPort &stream_port)
 
     switch (in_message.header.type) {
     case STREAM_TYPE_CAPABILITIES: {
-        StreamDevHeader hdr = {
-            STREAM_DEVICE_PROTOCOL,
-            0,
-            STREAM_TYPE_CAPABILITIES,
-            0
-        };
-
-        std::lock_guard<std::mutex> guard(stream_port.mutex);
-        stream_port.write(&hdr, sizeof(hdr));
+        stream_port.send<CapabilitiesOutMessage>();
         return;
     }
     case STREAM_TYPE_NOTIFY_ERROR: {
@@ -128,42 +159,6 @@ static void read_command(StreamPort &stream_port, bool blocking)
 
         sleep(1);
     }
-}
-
-static void spice_stream_send_format(StreamPort &stream_port, unsigned w, unsigned h, unsigned c)
-{
-
-    SpiceStreamFormatMessage msg;
-    const size_t msgsize = sizeof(msg);
-    const size_t hdrsize  = sizeof(msg.hdr);
-    memset(&msg, 0, msgsize);
-    msg.hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
-    msg.hdr.type = STREAM_TYPE_FORMAT;
-    msg.hdr.size = msgsize - hdrsize; /* includes only the body? */
-    msg.msg.width = w;
-    msg.msg.height = h;
-    msg.msg.codec = c;
-
-    syslog(LOG_DEBUG, "writing format");
-    std::lock_guard<std::mutex> guard(stream_port.mutex);
-    stream_port.write(&msg, msgsize);
-}
-
-static void spice_stream_send_frame(StreamPort &stream_port, const void *buf, const unsigned size)
-{
-    SpiceStreamDataMessage msg;
-    const size_t msgsize = sizeof(msg);
-
-    memset(&msg, 0, msgsize);
-    msg.hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
-    msg.hdr.type = STREAM_TYPE_DATA;
-    msg.hdr.size = size; /* includes only the body? */
-
-    std::lock_guard<std::mutex> guard(stream_port.mutex);
-    stream_port.write(&msg, msgsize);
-    stream_port.write(buf, size);
-
-    syslog(LOG_DEBUG, "Sent a frame of size %u", size);
 }
 
 static void handle_interrupt(int intr)
@@ -251,13 +246,13 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
                 syslog(LOG_DEBUG, "wXh %uX%u  codec=%u", width, height, codec);
                 frame_log.log_stat("Started new stream wXh %uX%u codec=%u", width, height, codec);
 
-                spice_stream_send_format(stream_port, width, height, codec);
+                stream_port.send<FormatMessage>(width, height, codec);
             }
             frame_log.log_stat("Frame of %zu bytes", frame.buffer_size);
             frame_log.log_frame(frame.buffer, frame.buffer_size);
 
             try {
-                spice_stream_send_frame(stream_port, frame.buffer, frame.buffer_size);
+                stream_port.send<FrameMessage>(frame.buffer, frame.buffer_size);
             } catch (const WriteError& e) {
                 syslog(e);
                 break;

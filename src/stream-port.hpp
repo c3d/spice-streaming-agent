@@ -60,10 +60,43 @@ public:
 
     InboundMessage receive();
 
+    template <typename Message, typename ...PayloadArgs>
+    void send(PayloadArgs&&... payload_args)
+    {
+        Message message(payload_args...);
+        std::lock_guard<std::mutex> stream_guard(mutex);
+        message.write_header(*this);
+        message.write_message_body(*this, payload_args...);
+    }
+
     void write(const void *buf, size_t len);
 
     const int fd;
+
+private:
     std::mutex mutex;
+};
+
+template <typename Payload, typename Message, unsigned Type>
+class OutboundMessage
+{
+public:
+    template <typename ...PayloadArgs>
+    OutboundMessage(PayloadArgs&&... payload_args)
+    {
+        hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
+        hdr.type = Type;
+        hdr.size = (uint32_t) Message::size(payload_args...);
+    }
+
+    void write_header(StreamPort &stream_port)
+    {
+        stream_port.write(&hdr, sizeof(hdr));
+    }
+
+protected:
+    StreamDevHeader hdr{};
+    using PayloadType = Payload;
 };
 
 void read_all(int fd, void *buf, size_t len);

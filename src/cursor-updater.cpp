@@ -12,52 +12,59 @@
 #include <spice/stream-device.h>
 #include <spice/enums.h>
 
-#include <cstring>
-#include <functional>
 #include <memory>
+#include <vector>
+#include <unistd.h>
 #include <X11/extensions/Xfixes.h>
 
 
 namespace spice {
 namespace streaming_agent {
 
-namespace {
-
-void send_cursor(StreamPort &stream_port, unsigned width, unsigned height, int hotspot_x, int hotspot_y,
-                 std::function<void(uint32_t *)> fill_cursor)
+class CursorError : public Error
 {
-    if (width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH || height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
-        return;
+    using Error::Error;
+};
+
+class CursorMessage : public OutboundMessage<StreamMsgCursorSet, CursorMessage, STREAM_TYPE_CURSOR_SET>
+{
+public:
+    CursorMessage(uint16_t width, uint16_t height, uint16_t xhot, uint16_t yhot,
+        const std::vector<uint32_t> &pixels)
+    :
+        OutboundMessage(pixels)
+    {
+        if (width >= STREAM_MSG_CURSOR_SET_MAX_WIDTH) {
+            throw CursorError("Cursor width " + std::to_string(width) +
+                " too big (limit is " + std::to_string(STREAM_MSG_CURSOR_SET_MAX_WIDTH) + ")");
+        }
+
+        if (height >= STREAM_MSG_CURSOR_SET_MAX_HEIGHT) {
+            throw CursorError("Cursor height " + std::to_string(height) +
+                " too big (limit is " + std::to_string(STREAM_MSG_CURSOR_SET_MAX_HEIGHT) + ")");
+        }
     }
 
-    size_t cursor_size =
-        sizeof(StreamDevHeader) + sizeof(StreamMsgCursorSet) +
-        width * height * sizeof(uint32_t);
-    std::unique_ptr<uint8_t[]> msg(new uint8_t[cursor_size]);
+    static size_t size(const std::vector<uint32_t> &pixels)
+    {
+        return sizeof(PayloadType) + sizeof(uint32_t) * pixels.size();
+    }
 
-    StreamDevHeader &dev_hdr(*reinterpret_cast<StreamDevHeader*>(msg.get()));
-    memset(&dev_hdr, 0, sizeof(dev_hdr));
-    dev_hdr.protocol_version = STREAM_DEVICE_PROTOCOL;
-    dev_hdr.type = STREAM_TYPE_CURSOR_SET;
-    dev_hdr.size = cursor_size - sizeof(StreamDevHeader);
+    void write_message_body(StreamPort &stream_port,
+        uint16_t width, uint16_t height, uint16_t xhot, uint16_t yhot,
+        const std::vector<uint32_t> &pixels)
+    {
+        StreamMsgCursorSet msg{};
+        msg.type = SPICE_CURSOR_TYPE_ALPHA;
+        msg.width = width;
+        msg.height = height;
+        msg.hot_spot_x = xhot;
+        msg.hot_spot_y = yhot;
 
-    StreamMsgCursorSet &cursor_msg(*reinterpret_cast<StreamMsgCursorSet *>(msg.get() + sizeof(StreamDevHeader)));
-    memset(&cursor_msg, 0, sizeof(cursor_msg));
-
-    cursor_msg.type = SPICE_CURSOR_TYPE_ALPHA;
-    cursor_msg.width = width;
-    cursor_msg.height = height;
-    cursor_msg.hot_spot_x = hotspot_x;
-    cursor_msg.hot_spot_y = hotspot_y;
-
-    uint32_t *pixels = reinterpret_cast<uint32_t *>(cursor_msg.data);
-    fill_cursor(pixels);
-
-    std::lock_guard<std::mutex> guard(stream_port.mutex);
-    stream_port.write(msg.get(), cursor_size);
-}
-
-} // namespace
+        stream_port.write(&msg, sizeof(msg));
+        stream_port.write(pixels.data(), sizeof(uint32_t) * pixels.size());
+    }
+};
 
 CursorUpdater::CursorUpdater(StreamPort *stream_port) : stream_port(stream_port)
 {
@@ -79,27 +86,39 @@ void CursorUpdater::operator()()
     unsigned long last_serial = 0;
 
     while (1) {
-        XEvent event;
-        XNextEvent(display, &event);
-        if (event.type != xfixes_event_base + 1) {
-            continue;
-        }
+        try {
+            XEvent event;
+            XNextEvent(display, &event);
+            if (event.type != xfixes_event_base + 1) {
+                continue;
+            }
 
-        XFixesCursorImage *cursor = XFixesGetCursorImage(display);
-        if (!cursor) {
-            continue;
-        }
+            XFixesCursorImage *cursor = XFixesGetCursorImage(display);
+            if (!cursor) {
+                continue;
+            }
 
-        if (cursor->cursor_serial == last_serial) {
-            continue;
-        }
+            if (cursor->cursor_serial == last_serial) {
+                continue;
+            }
 
-        last_serial = cursor->cursor_serial;
-        auto fill_cursor = [cursor](uint32_t *pixels) {
-            for (unsigned i = 0; i < cursor->width * cursor->height; ++i)
-                pixels[i] = cursor->pixels[i];
-        };
-        send_cursor(*stream_port, cursor->width, cursor->height, cursor->xhot, cursor->yhot, fill_cursor);
+            last_serial = cursor->cursor_serial;
+
+            // the X11 cursor data may be in a wrong format, copy them to an uint32_t array
+            size_t pixcount = cursor->width * cursor->height;
+            std::vector<uint32_t> pixels;
+            pixels.reserve(pixcount);
+
+            for (size_t i = 0; i < pixcount; ++i) {
+                pixels.push_back(cursor->pixels[i]);
+            }
+
+            stream_port->send<CursorMessage>(cursor->width, cursor->height,
+                                             cursor->xhot, cursor->yhot, pixels);
+        } catch (const std::exception &e) {
+            ::syslog(LOG_ERR, "Error in cursor updater thread: %s", e.what());
+            sleep(1); // rate-limit the error
+        }
     }
 }
 
