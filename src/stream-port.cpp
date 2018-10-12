@@ -19,6 +19,66 @@
 namespace spice {
 namespace streaming_agent {
 
+InboundMessage::InboundMessage(const StreamDevHeader &header, std::unique_ptr<uint8_t[]> &&data) :
+    header(header),
+    data(std::move(data))
+{}
+
+template<>
+StartStopMessage InboundMessage::get_payload<StartStopMessage>()
+{
+    StartStopMessage msg;
+
+    // data[0] is num_codecs. No codecs in the message means to stop streaming.
+    msg.start_streaming = data[0] > 0;
+
+    const size_t max_codecs = header.size - 1;
+    if (data[0] > max_codecs) {
+        throw std::runtime_error("Malformed StartStop message: num_codecs (" +
+                                 std::to_string(data[0]) + ") is greater than the message size (" +
+                                 std::to_string(max_codecs) + ")");
+    }
+
+    for (size_t i = 1; i <= data[0]; ++i) {
+        msg.client_codecs.insert((SpiceVideoCodecType) data[i]);
+    }
+
+    return msg;
+}
+
+template<>
+InCapabilitiesMessage InboundMessage::get_payload<InCapabilitiesMessage>()
+{
+    // no capabilities yet
+    return InCapabilitiesMessage();
+}
+
+template<>
+NotifyErrorMessage InboundMessage::get_payload<NotifyErrorMessage>()
+{
+    if (header.size < sizeof(StreamMsgNotifyError)) {
+        throw std::runtime_error("Received NotifyError message size " + std::to_string(header.size) +
+                                 " is too small (smaller than " +
+                                 std::to_string(sizeof(StreamMsgNotifyError)) + ")");
+    }
+
+    size_t msg_len = header.size - sizeof(StreamMsgNotifyError);
+    if (msg_len > 1024) {
+        throw std::runtime_error("Received NotifyError message is too long (" +
+                                 std::to_string(msg_len) + " > 1024)");
+    }
+
+    StreamMsgNotifyError *raw_message = reinterpret_cast<StreamMsgNotifyError*>(data.get());
+
+    NotifyErrorMessage msg;
+    msg.error_code = raw_message->error_code;
+    strncpy(msg.message, reinterpret_cast<char*>(raw_message->msg), msg_len);
+    // make sure the string is terminated
+    msg.message[msg_len] = '\0';
+
+    return msg;
+}
+
 StreamPort::StreamPort(const std::string &port_name) : fd(open(port_name.c_str(), O_RDWR | O_NONBLOCK))
 {
     if (fd < 0) {
@@ -31,9 +91,26 @@ StreamPort::~StreamPort()
     close(fd);
 }
 
-void StreamPort::read(void *buf, size_t len)
+InboundMessage StreamPort::receive()
 {
-    read_all(fd, buf, len);
+    std::lock_guard<std::mutex> stream_guard(mutex);
+
+    StreamDevHeader header;
+    read_all(fd, &header, sizeof(header));
+
+    if (header.protocol_version != STREAM_DEVICE_PROTOCOL) {
+        throw std::runtime_error("Bad protocol version: " + std::to_string(header.protocol_version) +
+                                 ", expected: " + std::to_string(STREAM_DEVICE_PROTOCOL));
+    }
+
+    if (header.size > 4 * 1024) {  // a 4kB generic limit of the message size
+        throw std::runtime_error("Inbound message too big, exceeding the 4kB limit.");
+    }
+
+    std::unique_ptr<uint8_t[]> data(new uint8_t[header.size]);
+    read_all(fd, data.get(), header.size);
+
+    return InboundMessage(header, std::move(data));
 }
 
 void StreamPort::write(const void *buf, size_t len)

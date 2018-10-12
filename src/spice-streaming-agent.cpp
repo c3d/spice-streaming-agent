@@ -77,97 +77,41 @@ static bool have_something_to_read(StreamPort &stream_port, bool blocking)
     return false;
 }
 
-static void handle_stream_start_stop(StreamPort &stream_port, uint32_t len)
-{
-    uint8_t msg[256];
-
-    if (len >= sizeof(msg)) {
-        throw std::runtime_error("msg size (" + std::to_string(len) + ") is too long "
-                                 "(longer than " + std::to_string(sizeof(msg)) + ")");
-    }
-
-    stream_port.read(msg, len);
-    streaming_requested = (msg[0] != 0); /* num_codecs */
-    syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming",
-           streaming_requested ? "START" : "STOP");
-    client_codecs.clear();
-    const int max_codecs = len - 1; /* see struct StreamMsgStartStop */
-    if (msg[0] > max_codecs) {
-        throw std::runtime_error("num_codecs=" + std::to_string(msg[0]) +
-                                 " > max_codecs=" + std::to_string(max_codecs));
-    }
-    for (int i = 1; i <= msg[0]; ++i) {
-        client_codecs.insert((SpiceVideoCodecType) msg[i]);
-    }
-}
-
-static void handle_stream_capabilities(StreamPort &stream_port, uint32_t len)
-{
-    uint8_t caps[STREAM_MSG_CAPABILITIES_MAX_BYTES];
-
-    if (len > sizeof(caps)) {
-        throw std::runtime_error("capability message too long");
-    }
-
-    stream_port.read(caps, len);
-    // we currently do not support extensions so just reply so
-    StreamDevHeader hdr = {
-        STREAM_DEVICE_PROTOCOL,
-        0,
-        STREAM_TYPE_CAPABILITIES,
-        0
-    };
-
-    stream_port.write(&hdr, sizeof(hdr));
-}
-
-static void handle_stream_error(StreamPort &stream_port, size_t len)
-{
-    if (len < sizeof(StreamMsgNotifyError)) {
-        throw std::runtime_error("Received NotifyError message size " + std::to_string(len) +
-                                 " is too small (smaller than " +
-                                 std::to_string(sizeof(StreamMsgNotifyError)) + ")");
-    }
-
-    struct StreamMsgNotifyError1K : StreamMsgNotifyError {
-        uint8_t msg[1024];
-    } msg;
-
-    size_t len_to_read = std::min(len, sizeof(msg) - 1);
-
-    stream_port.read(&msg, len_to_read);
-    msg.msg[len_to_read - sizeof(StreamMsgNotifyError)] = '\0';
-
-    syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s",
-        msg.error_code, msg.msg);
-
-    if (len_to_read < len) {
-        throw std::runtime_error("Received NotifyError message size " + std::to_string(len) +
-                                 " is too big (bigger than " + std::to_string(sizeof(msg)) + ")");
-    }
-}
-
 static void read_command_from_device(StreamPort &stream_port)
 {
-    StreamDevHeader hdr;
+    InboundMessage in_message = stream_port.receive();
 
-    std::lock_guard<std::mutex> guard(stream_port.mutex);
-    stream_port.read(&hdr, sizeof(hdr));
+    switch (in_message.header.type) {
+    case STREAM_TYPE_CAPABILITIES: {
+        StreamDevHeader hdr = {
+            STREAM_DEVICE_PROTOCOL,
+            0,
+            STREAM_TYPE_CAPABILITIES,
+            0
+        };
 
-    if (hdr.protocol_version != STREAM_DEVICE_PROTOCOL) {
-        throw std::runtime_error("BAD VERSION " + std::to_string(hdr.protocol_version) +
-                                 " (expected is " + std::to_string(STREAM_DEVICE_PROTOCOL) + ")");
+        std::lock_guard<std::mutex> guard(stream_port.mutex);
+        stream_port.write(&hdr, sizeof(hdr));
+        return;
     }
+    case STREAM_TYPE_NOTIFY_ERROR: {
+        NotifyErrorMessage msg = in_message.get_payload<NotifyErrorMessage>();
 
-    switch (hdr.type) {
-    case STREAM_TYPE_CAPABILITIES:
-        return handle_stream_capabilities(stream_port, hdr.size);
-    case STREAM_TYPE_NOTIFY_ERROR:
-        return handle_stream_error(stream_port, hdr.size);
-    case STREAM_TYPE_START_STOP:
-        return handle_stream_start_stop(stream_port, hdr.size);
+        syslog(LOG_ERR, "Received NotifyError message from the server: %d - %s",
+               msg.error_code, msg.message);
+        return;
     }
-    throw std::runtime_error("UNKNOWN msg of type " + std::to_string(hdr.type));
+    case STREAM_TYPE_START_STOP: {
+        StartStopMessage msg = in_message.get_payload<StartStopMessage>();
+        streaming_requested = msg.start_streaming;
+        client_codecs = msg.client_codecs;
+
+        syslog(LOG_INFO, "GOT START_STOP message -- request to %s streaming",
+               streaming_requested ? "START" : "STOP");
+        return;
+    }}
+
+    throw std::runtime_error("UNKNOWN msg of type " + std::to_string(in_message.header.type));
 }
 
 static void read_command(StreamPort &stream_port, bool blocking)
