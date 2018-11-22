@@ -23,6 +23,8 @@
 
 #include <spice-streaming-agent/plugin.hpp>
 #include <spice-streaming-agent/frame-capture.hpp>
+#include <spice-streaming-agent/x11-display-info.hpp>
+
 
 #define gst_syslog(priority, str, ...) syslog(priority, "Gstreamer plugin: " str, ## __VA_ARGS__);
 
@@ -76,6 +78,7 @@ public:
     SpiceVideoCodecType VideoCodecType() const override {
         return settings.codec;
     }
+    std::vector<DeviceDisplayInfo> get_device_display_info() const override;
 private:
     void free_sample();
     GstElement *get_encoder_plugin(const GstreamerEncoderSettings &settings, GstCapsUPtr &sink_caps);
@@ -400,6 +403,17 @@ FrameInfo GstreamerFrameCapture::CaptureFrame()
     }
 
     return info;
+}
+
+std::vector<DeviceDisplayInfo> GstreamerFrameCapture::get_device_display_info() const
+{
+    try {
+        return get_device_display_info_drm(dpy);
+    } catch (const std::exception &e) {
+        syslog(LOG_WARNING, "Failed to get device info using DRM: %s. Using no-DRM fallback.",
+               e.what());
+        return get_device_display_info_no_drm(dpy);
+    }
 }
 
 FrameCapture *GstreamerPlugin::CreateCapture()

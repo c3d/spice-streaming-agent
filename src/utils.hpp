@@ -5,12 +5,16 @@
 #ifndef SPICE_STREAMING_AGENT_UTILS_HPP
 #define SPICE_STREAMING_AGENT_UTILS_HPP
 
+#include <vector>
+#include <string>
 #include <syslog.h>
 
 
 namespace spice {
 namespace streaming_agent {
 namespace utils {
+
+std::vector<std::string> glob(const std::string& pattern);
 
 template<class T>
 const T &syslog(const T &error) noexcept

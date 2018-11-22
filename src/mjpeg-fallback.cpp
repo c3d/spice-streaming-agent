@@ -7,6 +7,9 @@
 #include <config.h>
 #include "mjpeg-fallback.hpp"
 
+#include "jpeg.hpp"
+#include <spice-streaming-agent/x11-display-info.hpp>
+
 #include <cstring>
 #include <exception>
 #include <stdexcept>
@@ -14,8 +17,6 @@
 #include <memory>
 #include <syslog.h>
 #include <X11/Xlib.h>
-
-#include "jpeg.hpp"
 
 using namespace spice::streaming_agent;
 
@@ -40,6 +41,7 @@ public:
     SpiceVideoCodecType VideoCodecType() const override {
         return SPICE_VIDEO_CODEC_TYPE_MJPEG;
     }
+    std::vector<DeviceDisplayInfo> get_device_display_info() const override;
 private:
     MjpegSettings settings;
     Display *dpy;
@@ -135,6 +137,17 @@ FrameInfo MjpegFrameCapture::CaptureFrame()
     info.stream_start = is_first;
 
     return info;
+}
+
+std::vector<DeviceDisplayInfo> MjpegFrameCapture::get_device_display_info() const
+{
+    try {
+        return get_device_display_info_drm(dpy);
+    } catch (const std::exception &e) {
+        syslog(LOG_WARNING, "Failed to get device info using DRM: %s. Using no-DRM fallback.",
+               e.what());
+        return get_device_display_info_no_drm(dpy);
+    }
 }
 
 FrameCapture *MjpegPlugin::CreateCapture()

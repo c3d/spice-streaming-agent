@@ -16,9 +16,11 @@ AM_CPPFLAGS = \
 	-DSPICE_STREAMING_AGENT_PROGRAM \
 	-I$(top_srcdir)/include \
 	-DPLUGINSDIR=\"$(pkglibdir)/plugins\" \
+	$(DRM_CFLAGS) \
 	$(SPICE_PROTOCOL_CFLAGS) \
 	$(X11_CFLAGS) \
 	$(XFIXES_CFLAGS) \
+	$(XRANDR_CFLAGS) \
 	$(NULL)
 
 AM_CFLAGS = \
@@ -50,8 +52,10 @@ spice_streaming_agent_LDADD = \
 	-ldl \
 	-lpthread \
 	libstreaming-utils.a \
+	$(DRM_LIBS) \
 	$(X11_LIBS) \
 	$(XFIXES_LIBS) \
+	$(XRANDR_LIBS) \
 	$(JPEG_LIBS) \
 	$(NULL)
 
@@ -61,6 +65,7 @@ spice_streaming_agent_SOURCES = \
 	concrete-agent.hpp \
 	cursor-updater.cpp \
 	cursor-updater.hpp \
+	display-info.cpp \
 	frame-log.cpp \
 	frame-log.hpp \
 	mjpeg-fallback.cpp \
@@ -69,7 +74,9 @@ spice_streaming_agent_SOURCES = \
 	jpeg.hpp \
 	stream-port.cpp \
 	stream-port.hpp \
+	utils.cpp \
 	utils.hpp \
+	x11-display-info.cpp \
 	$(NULL)
 
 if HAVE_GST

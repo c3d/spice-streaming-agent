@@ -217,6 +217,19 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
             throw std::runtime_error("cannot find a suitable capture system");
         }
 
+        try {
+            std::vector<DeviceDisplayInfo> display_info = capture->get_device_display_info();
+            syslog(LOG_DEBUG, "Got device info of %lu devices from the plugin", display_info.size());
+            for (const auto &info : display_info) {
+                syslog(LOG_DEBUG, "   id %u: device address %s, device display id: %u",
+                       info.stream_id,
+                       info.device_address.c_str(),
+                       info.device_display_id);
+            }
+        } catch (const Error &e) {
+            syslog(LOG_ERR, "Error while getting device info: %s", e.what());
+        }
+
         while (!quit_requested && streaming_requested) {
             if (++frame_count % 100 == 0) {
                 syslog(LOG_DEBUG, "SENT %d frames", frame_count);

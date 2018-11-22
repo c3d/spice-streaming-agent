@@ -6,7 +6,11 @@
  */
 #ifndef SPICE_STREAMING_AGENT_FRAME_CAPTURE_HPP
 #define SPICE_STREAMING_AGENT_FRAME_CAPTURE_HPP
+
+#include <cstdint>
 #include <cstdio>
+#include <string>
+#include <vector>
 
 #include <spice/enums.h>
 
@@ -27,6 +31,13 @@ struct FrameInfo
     size_t buffer_size;
     /*! Start of a new stream */
     bool stream_start;
+};
+
+struct DeviceDisplayInfo
+{
+    uint32_t stream_id;
+    std::string device_address;
+    uint32_t device_display_id;
 };
 
 /*!
@@ -52,6 +63,8 @@ public:
      * Get video codec used to encode last frame
      */
     virtual SpiceVideoCodecType VideoCodecType() const = 0;
+
+    virtual std::vector<DeviceDisplayInfo> get_device_display_info() const = 0;
 protected:
     FrameCapture() = default;
     FrameCapture(const FrameCapture&) = delete;

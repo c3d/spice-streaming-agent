@@ -5,6 +5,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/src \
 	-I$(top_srcdir)/src/unittests \
+	$(DRM_CFLAGS) \
 	$(SPICE_PROTOCOL_CFLAGS) \
 	$(NULL)
 
@@ -43,13 +44,18 @@ hexdump_LDADD = \
 
 test_mjpeg_fallback_SOURCES = \
 	test-mjpeg-fallback.cpp \
+	../display-info.cpp \
 	../jpeg.cpp \
 	../mjpeg-fallback.cpp \
+	../utils.cpp \
+	../x11-display-info.cpp \
 	$(NULL)
 
 test_mjpeg_fallback_LDADD = \
+	$(DRM_LIBS) \
 	$(X11_LIBS) \
 	$(JPEG_LIBS) \
+	$(XRANDR_LIBS) \
 	$(NULL)
 
 test_stream_port_SOURCES = \
