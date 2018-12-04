@@ -22,10 +22,13 @@ AM_CPPFLAGS = \
 	$(NULL)
 
 AM_CFLAGS = \
+	-fvisibility=hidden \
 	$(WARN_CFLAGS) \
 	$(NULL)
 
 AM_CXXFLAGS = \
+	-fvisibility=hidden \
+	-fvisibility-inlines-hidden \
 	$(WARN_CXXFLAGS) \
 	$(NULL)
 
@@ -38,6 +41,7 @@ libstreaming_utils_a_SOURCES = \
 	$(NULL)
 
 spice_streaming_agent_LDFLAGS = \
+	-export-dynamic \
 	$(RELRO_LDFLAGS) \
 	$(NO_INDIRECT_LDFLAGS) \
 	$(NULL)

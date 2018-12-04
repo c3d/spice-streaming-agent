@@ -11,7 +11,7 @@
 #include <string>
 
 
-namespace spice {
+namespace spice __attribute__ ((visibility ("default"))) {
 namespace streaming_agent {
 
 class Error : public std::runtime_error
