@@ -9,7 +9,6 @@
 
 #include <stdexcept>
 #include <string>
-#include <syslog.h>
 
 
 namespace spice {
@@ -20,13 +19,6 @@ class Error : public std::runtime_error
 public:
     Error(const std::string &message) : std::runtime_error(message) {}
 };
-
-template<class T>
-const T &syslog(const T &error) noexcept
-{
-    ::syslog(LOG_ERR, "%s\n", error.what());
-    return error;
-}
 
 }} // namespace spice::streaming_agent
 

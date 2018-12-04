@@ -9,6 +9,7 @@
 #include "cursor-updater.hpp"
 #include "frame-log.hpp"
 #include "stream-port.hpp"
+#include "utils.hpp"
 #include <spice-streaming-agent/error.hpp>
 
 #include <spice/stream-device.h>
@@ -254,7 +255,7 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
             try {
                 stream_port.send<FrameMessage>(frame.buffer, frame.buffer_size);
             } catch (const WriteError& e) {
-                syslog(e);
+                utils::syslog(e);
                 break;
             }
             frame_log.log_stat("Sent frame");

@@ -65,6 +65,7 @@ spice_streaming_agent_SOURCES = \
 	jpeg.hpp \
 	stream-port.cpp \
 	stream-port.hpp \
+	utils.hpp \
 	$(NULL)
 
 if HAVE_GST

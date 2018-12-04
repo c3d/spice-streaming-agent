@@ -14,6 +14,7 @@
 
 #include <memory>
 #include <vector>
+#include <syslog.h>
 #include <unistd.h>
 #include <X11/extensions/Xfixes.h>
 
