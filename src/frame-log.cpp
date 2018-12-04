@@ -6,8 +6,8 @@
 
 #include "frame-log.hpp"
 
-#include "error.hpp"
 #include "hexdump.h"
+#include <spice-streaming-agent/error.hpp>
 
 #include <chrono>
 #include <cstdarg>

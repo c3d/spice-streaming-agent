@@ -9,7 +9,7 @@
 #include "cursor-updater.hpp"
 #include "frame-log.hpp"
 #include "stream-port.hpp"
-#include "error.hpp"
+#include <spice-streaming-agent/error.hpp>
 
 #include <spice/stream-device.h>
 #include <spice/enums.h>

@@ -18,27 +18,7 @@ namespace streaming_agent {
 class Error : public std::runtime_error
 {
 public:
-    Error(const std::string &message);
-};
-
-class IOError : public Error
-{
-public:
-    using Error::Error;
-
-    IOError(const std::string &msg, int sys_errno);
-};
-
-class ReadError : public IOError
-{
-public:
-    using IOError::IOError;
-};
-
-class WriteError : public IOError
-{
-public:
-    using IOError::IOError;
+    Error(const std::string &message) : std::runtime_error(message) {}
 };
 
 template<class T>

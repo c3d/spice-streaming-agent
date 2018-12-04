@@ -7,7 +7,7 @@
 
 #include "cursor-updater.hpp"
 
-#include "error.hpp"
+#include <spice-streaming-agent/error.hpp>
 
 #include <spice/stream-device.h>
 #include <spice/enums.h>

@@ -55,7 +55,6 @@ test_mjpeg_fallback_LDADD = \
 test_stream_port_SOURCES = \
 	test-stream-port.cpp \
 	../stream-port.cpp \
-	../error.cpp \
 	$(NULL)
 
 EXTRA_DIST = \

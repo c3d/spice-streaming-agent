@@ -10,7 +10,7 @@
 #include <signal.h>
 
 #include "stream-port.hpp"
-#include "error.hpp"
+#include <spice-streaming-agent/error.hpp>
 
 
 namespace ssa = spice::streaming_agent;

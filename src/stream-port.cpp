@@ -5,7 +5,6 @@
  */
 
 #include "stream-port.hpp"
-#include "error.hpp"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -18,6 +17,10 @@
 
 namespace spice {
 namespace streaming_agent {
+
+IOError::IOError(const std::string &msg, int sys_errno) :
+    Error(msg + ": " + std::to_string(sys_errno) + " - " + strerror(sys_errno))
+{}
 
 InboundMessage::InboundMessage(const StreamDevHeader &header, std::unique_ptr<uint8_t[]> &&data) :
     header(header),

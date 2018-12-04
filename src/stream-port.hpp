@@ -10,6 +10,8 @@
 #include <spice/stream-device.h>
 #include <spice/enums.h>
 
+#include <spice-streaming-agent/error.hpp>
+
 #include <cstddef>
 #include <string>
 #include <memory>
@@ -19,6 +21,26 @@
 
 namespace spice {
 namespace streaming_agent {
+
+class IOError : public Error
+{
+public:
+    using Error::Error;
+
+    IOError(const std::string &msg, int sys_errno);
+};
+
+class ReadError : public IOError
+{
+public:
+    using IOError::IOError;
+};
+
+class WriteError : public IOError
+{
+public:
+    using IOError::IOError;
+};
 
 struct StartStopMessage
 {

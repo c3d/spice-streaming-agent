@@ -57,8 +57,6 @@ spice_streaming_agent_SOURCES = \
 	concrete-agent.hpp \
 	cursor-updater.cpp \
 	cursor-updater.hpp \
-	error.cpp \
-	error.hpp \
 	frame-log.cpp \
 	frame-log.hpp \
 	mjpeg-fallback.cpp \
