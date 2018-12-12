@@ -31,6 +31,7 @@
 #include <poll.h>
 #include <syslog.h>
 #include <signal.h>
+#include <algorithm>
 #include <exception>
 #include <stdexcept>
 #include <memory>
@@ -91,6 +92,39 @@ public:
     {
         // No body for capabilities message
     }
+};
+
+class DeviceDisplayInfoMessage : public OutboundMessage<StreamMsgDeviceDisplayInfo, DeviceDisplayInfoMessage, STREAM_TYPE_DEVICE_DISPLAY_INFO>
+{
+public:
+    DeviceDisplayInfoMessage(const DeviceDisplayInfo &info) : OutboundMessage(info) {}
+
+    static size_t size(const DeviceDisplayInfo &info)
+    {
+        return sizeof(PayloadType) +
+               std::min(info.device_address.length(), static_cast<size_t>(max_device_address_len)) +
+               1;
+    }
+
+    void write_message_body(StreamPort &stream_port, const DeviceDisplayInfo &info)
+    {
+        std::string device_address = info.device_address;
+        if (device_address.length() > max_device_address_len) {
+            syslog(LOG_WARNING,
+                   "device address of stream id %u is longer than %u bytes, trimming.",
+                   info.stream_id, max_device_address_len);
+            device_address = device_address.substr(0, max_device_address_len);
+        }
+        StreamMsgDeviceDisplayInfo strm_msg_info{};
+        strm_msg_info.stream_id = info.stream_id;
+        strm_msg_info.device_display_id = info.device_display_id;
+        strm_msg_info.device_address_len = device_address.length() + 1;
+        stream_port.write(&strm_msg_info, sizeof(strm_msg_info));
+        stream_port.write(device_address.c_str(), device_address.length() + 1);
+    }
+
+private:
+    static constexpr uint32_t max_device_address_len = 255;
 };
 
 static bool streaming_requested = false;
@@ -217,17 +251,30 @@ do_capture(StreamPort &stream_port, FrameLog &frame_log)
             throw std::runtime_error("cannot find a suitable capture system");
         }
 
+        std::vector<DeviceDisplayInfo> display_info;
         try {
-            std::vector<DeviceDisplayInfo> display_info = capture->get_device_display_info();
-            syslog(LOG_DEBUG, "Got device info of %lu devices from the plugin", display_info.size());
-            for (const auto &info : display_info) {
-                syslog(LOG_DEBUG, "   id %u: device address %s, device display id: %u",
-                       info.stream_id,
-                       info.device_address.c_str(),
-                       info.device_display_id);
-            }
+            display_info = capture->get_device_display_info();
         } catch (const Error &e) {
-            syslog(LOG_ERR, "Error while getting device info: %s", e.what());
+            syslog(LOG_ERR, "Error while getting device display info: %s", e.what());
+        }
+
+        syslog(LOG_DEBUG, "Got device info of %zu devices from the plugin", display_info.size());
+        for (const auto &info : display_info) {
+            syslog(LOG_DEBUG, "   stream id %u: device address: %s, device display id: %u",
+                   info.stream_id,
+                   info.device_address.c_str(),
+                   info.device_display_id);
+        }
+
+        if (display_info.size() > 0) {
+            if (display_info.size() > 1) {
+                syslog(LOG_WARNING, "Warning: the Frame Capture plugin returned device display "
+                       "info for more than one display device, but we currently only support "
+                       "a single device. Sending information for first device to the server.");
+            }
+            stream_port.send<DeviceDisplayInfoMessage>(display_info[0]);
+        } else {
+            syslog(LOG_ERR, "Empty device display info from the plugin");
         }
 
         while (!quit_requested && streaming_requested) {

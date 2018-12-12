@@ -30,7 +30,7 @@ PKG_PROG_PKG_CONFIG
 dnl =========================================================================
 dnl Check deps
 
-SPICE_PROTOCOL_MIN_VER=0.12.14
+SPICE_PROTOCOL_MIN_VER=0.12.16
 PKG_CHECK_MODULES([SPICE_PROTOCOL], [spice-protocol >= $SPICE_PROTOCOL_MIN_VER])
 AC_SUBST([SPICE_PROTOCOL_MIN_VER])
 
