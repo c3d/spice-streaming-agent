@@ -1,7 +1,9 @@
 image: fedora:latest
 
 before_script:
-    - dnf install 'dnf-command(copr)' make automake autoconf autoconf-archive libtool xz gcc-c++ -y
+    - >
+      dnf install -y 'dnf-command(copr)' make automake autoconf autoconf-archive libtool xz gcc-c++
+      libdrm-devel libXrandr-devel
     - dnf copr enable @spice/nightly -y
     - dnf builddep spice-streaming-agent -y
 
