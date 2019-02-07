@@ -1,5 +1,5 @@
 #define CATCH_CONFIG_MAIN
-#include "catch/catch.hpp"
+#include "spice-catch.hpp"
 
 #include "mjpeg-fallback.hpp"
 

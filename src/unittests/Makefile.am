@@ -49,6 +49,7 @@ test_mjpeg_fallback_SOURCES = \
 	../mjpeg-fallback.cpp \
 	../utils.cpp \
 	../x11-display-info.cpp \
+	spice-catch.hpp \
 	$(NULL)
 
 test_mjpeg_fallback_LDADD = \
@@ -61,6 +62,7 @@ test_mjpeg_fallback_LDADD = \
 test_stream_port_SOURCES = \
 	test-stream-port.cpp \
 	../stream-port.cpp \
+	spice-catch.hpp \
 	$(NULL)
 
 EXTRA_DIST = \

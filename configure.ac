@@ -119,9 +119,11 @@ case "$enable_tests" in
   *) AC_MSG_ERROR([bad value ${enable_tests} for enable-tests option]) ;;
 esac
 AS_IF([test "x$enable_tests" != "xno"],
-      [AC_CHECK_HEADER([catch/catch.hpp],have_check="yes",)])
+      [AC_CHECK_HEADERS([catch/catch.hpp],  have_check="yes")
+       AC_CHECK_HEADERS([catch2/catch.hpp], have_check="yes")])
+
 AS_IF([test "x$enable_tests" = "xyes" && test "x$have_check" != "xyes"],
-      [AC_MSG_ERROR([Could not find Catch dependency header (catch/catch.hpp)])])
+      [AC_MSG_ERROR([Could not find Catch dependency header (catch.hpp)])])
 AM_CONDITIONAL([ENABLE_TESTS], [test "x$have_check" = "xyes"])
 
 AC_DEFINE_DIR([BINDIR], [bindir], [Where binaries are installed.])
