@@ -1,11 +1,11 @@
 image: fedora:latest
 
 before_script:
-    - >
-      dnf install -y 'dnf-command(copr)' make automake autoconf autoconf-archive libtool xz gcc-c++
-      libdrm-devel libXrandr-devel
-    - dnf copr enable @spice/nightly -y
-    - dnf builddep spice-streaming-agent -y
+    - dnf install -y git make automake autoconf autoconf-archive libtool xz
+    # get dependencies from spec file
+    - dnf install -y `sed '/^BuildRequires:/!d; s/.*://; s/\bspice-protocol\b//; s/>.*//' spice-streaming-agent.spec.in`
+    - git clone ${CI_REPOSITORY_URL/spice-streaming-agent/spice-protocol}
+    - (cd spice-protocol && ./autogen.sh --prefix=/usr && make install)
 
 build_and_test:
   script:
