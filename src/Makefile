@@ -19,10 +19,13 @@ SOURCES=	spice-streaming-agent.cpp 				\
 		concrete-agent.cpp					\
 		cursor-updater.cpp 					\
 		frame-log.cpp	 					\
+		display-info.cpp					\
+		gst-plugin.cpp						\
 		mjpeg-fallback.cpp					\
 		jpeg.cpp						\
 		stream-port.cpp						\
 		error.cpp						\
+		utils.cpp						\
 		hexdump.c
 
 INCLUDES=	.							\
