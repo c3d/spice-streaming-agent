@@ -9,6 +9,7 @@
 #include <glob.h>
 #include <string.h>
 #include <stdexcept>
+#include <errno.h>
 
 
 namespace spice {
