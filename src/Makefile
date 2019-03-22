@@ -1,11 +1,12 @@
 TOP=../
 MIQ=$(TOP)make-it-quick/
 
-VARIANTS=	agent plugins
+VARIANTS=	agent plugins lib
 
-PRODUCTS=	$(PRODUCTS_$(VARIANT)
+PRODUCTS=	$(PRODUCTS_$(VARIANT))
 PRODUCTS_agent=	spice-streaming-agent.exe
 PRODUCTS_plugins=$(HAVE_GST_GST_H:%=gst-plugin.dll)
+PRODUCTS_lib=	spice-streaming-agent-utils.lib
 
 PKGCONFIGS=	libjpeg							\
 		gstreamer-1.0?						\
@@ -17,10 +18,12 @@ PKGCONFIGS+=	spice-protocol
 endif
 
 CONFIG=		<gst/gst.h>						\
+		<xf86drm.h>						\
 		libpthread						\
 		libdl							\
 		libX11							\
-		libXfixes
+		libXfixes						\
+		libXrandr
 
 SOURCES=	$(SOURCES_$(VARIANT))
 SOURCES_agent=	spice-streaming-agent.cpp 				\
@@ -28,11 +31,17 @@ SOURCES_agent=	spice-streaming-agent.cpp 				\
 		cursor-updater.cpp 					\
 		frame-log.cpp	 					\
 		display-info.cpp					\
+		x11-display-info.cpp					\
 		mjpeg-fallback.cpp					\
 		jpeg.cpp						\
 		stream-port.cpp						\
 		utils.cpp						\
 		hexdump.c
+
+SOURCES_lib=	display-info.cpp					\
+		x11-display-info.cpp					\
+		hexdump.c						\
+		utils.cpp
 
 SOURCES_plugins=							\
 		$(HAVE_GST_GST_H:%=gst-plugin.cpp)			\

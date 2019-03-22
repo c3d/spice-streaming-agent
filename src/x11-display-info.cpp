@@ -15,9 +15,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <X11/extensions/Xrandr.h>
+#ifdef HAVE_XF86DRM_H
 #include <xf86drm.h>
 #include <xf86drmMode.h>
-
+#endif // HAVE_XF86DRM_H
 
 namespace spice {
 namespace streaming_agent {
@@ -35,6 +36,7 @@ struct OutputInfo {
     uint32_t device_display_id;
 };
 
+#if HAVE_XF86DRM_H
 static const std::map<uint32_t, std::string> modesetting_output_names = {
     {DRM_MODE_CONNECTOR_Unknown, "None"},
     {DRM_MODE_CONNECTOR_VGA, "VGA"},
@@ -138,11 +140,13 @@ private:
     int drm_fd = -1;
     drmModeResPtr drm_resources = nullptr;
 };
+#endif // HAVE_XF86DRM_H
 
 std::vector<OutputInfo> get_outputs()
 {
     std::vector<OutputInfo> result;
 
+#if HAVE_XF86DRM_H
     for (uint8_t card_id = 0; card_id < 10; ++card_id) {
         std::string card_name = "card" + std::to_string(card_id);
 
@@ -183,6 +187,7 @@ std::vector<OutputInfo> get_outputs()
                               i});
         }
     }
+#endif // HAVE_XF86DRM_H
 
     return result;
 }
