@@ -26,7 +26,7 @@ static inline uint64_t get_time()
 
     clock_gettime(CLOCK_MONOTONIC, &now);
 
-    return (uint64_t)now.tv_sec * 10000000000u + (uint64_t)now.tv_nsec;
+    return (uint64_t)now.tv_sec * 1000000000u + (uint64_t)now.tv_nsec;
 }
 
 namespace {
