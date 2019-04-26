@@ -26,6 +26,7 @@ remote client (over SPICE).
 %package devel
 Requires: spice-protocol >= @SPICE_PROTOCOL_MIN_VER@
 Requires: pkgconfig
+Requires: libX11-devel
 Summary:  SPICE streaming agent development files
 
 %description devel
