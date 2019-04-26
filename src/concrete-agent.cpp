@@ -25,9 +25,10 @@ static inline unsigned MinorVersion(unsigned version)
     return version & 0xffu;
 }
 
-ConcreteAgent::ConcreteAgent()
+ConcreteAgent::ConcreteAgent(const std::vector<ConcreteConfigureOption> &options):
+    options(options)
 {
-    options.push_back(ConcreteConfigureOption(nullptr, nullptr));
+    this->options.push_back(ConcreteConfigureOption(nullptr, nullptr));
 }
 
 bool ConcreteAgent::PluginVersionIsCompatible(unsigned pluginVersion) const
@@ -47,12 +48,6 @@ const ConfigureOption* ConcreteAgent::Options() const
     static_assert(sizeof(ConcreteConfigureOption) == sizeof(ConfigureOption),
                   "ConcreteConfigureOption should be binary compatible with ConfigureOption");
     return static_cast<const ConfigureOption*>(&options[0]);
-}
-
-void ConcreteAgent::AddOption(const char *name, const char *value)
-{
-    // insert before the last {nullptr, nullptr} value
-    options.insert(--options.end(), ConcreteConfigureOption(name, value));
 }
 
 void ConcreteAgent::LoadPlugins(const std::string &directory)

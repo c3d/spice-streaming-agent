@@ -41,8 +41,6 @@
 
 using namespace spice::streaming_agent;
 
-static ConcreteAgent agent;
-
 class FormatMessage : public OutboundMessage<StreamMsgFormat, FormatMessage, STREAM_TYPE_FORMAT>
 {
 public:
@@ -231,7 +229,7 @@ static void usage(const char *progname)
 }
 
 static void
-do_capture(StreamPort &stream_port, FrameLog &frame_log)
+do_capture(StreamPort &stream_port, FrameLog &frame_log, ConcreteAgent &agent)
 {
     unsigned int frame_count = 0;
     while (!quit_requested) {
@@ -353,6 +351,8 @@ int main(int argc, char* argv[])
 
     setlogmask(LOG_UPTO(LOG_NOTICE));
 
+    std::vector<ConcreteConfigureOption> options;
+
     while ((opt = getopt_long(argc, argv, "hp:c:l:d", long_options, NULL)) != -1) {
         switch (opt) {
         case 0:
@@ -371,7 +371,7 @@ int main(int argc, char* argv[])
                 usage(argv[0]);
             }
             *p++ = '\0';
-            agent.AddOption(optarg, p);
+            options.push_back(ConcreteConfigureOption(optarg, p));
             break;
         }
         case OPT_LOG_BINARY:
@@ -401,6 +401,8 @@ int main(int argc, char* argv[])
     register_interrupts();
 
     try {
+        ConcreteAgent agent(options);
+
         // register built-in plugins
         MjpegPlugin::Register(&agent);
 
@@ -418,7 +420,7 @@ int main(int argc, char* argv[])
         std::thread cursor_updater{CursorUpdater(&stream_port)};
         cursor_updater.detach();
 
-        do_capture(stream_port, frame_log);
+        do_capture(stream_port, frame_log, agent);
     }
     catch (std::exception &err) {
         syslog(LOG_ERR, "%s", err.what());

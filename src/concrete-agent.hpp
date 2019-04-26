@@ -26,12 +26,10 @@ struct ConcreteConfigureOption: ConfigureOption
 class ConcreteAgent final : public Agent
 {
 public:
-    ConcreteAgent();
+    ConcreteAgent(const std::vector<ConcreteConfigureOption> &options);
     void Register(const std::shared_ptr<Plugin>& plugin) override;
     const ConfigureOption* Options() const override;
     void LoadPlugins(const std::string &directory);
-    // pointer must remain valid
-    void AddOption(const char *name, const char *value);
     FrameCapture *GetBestFrameCapture(const std::set<SpiceVideoCodecType>& codecs);
 private:
     bool PluginVersionIsCompatible(unsigned pluginVersion) const;
