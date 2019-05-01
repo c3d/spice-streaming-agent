@@ -84,9 +84,9 @@ private:
     GstElement *get_encoder_plugin(const GstreamerEncoderSettings &settings, GstCapsUPtr &sink_caps);
     GstElement *get_capture_plugin(const GstreamerEncoderSettings &settings);
     void pipeline_init(const GstreamerEncoderSettings &settings);
+    Display *const dpy;
 #if XLIB_CAPTURE
     void xlib_capture();
-    Display *dpy;
     XImage *image = nullptr;
 #endif
     GstObjectUPtr<GstElement> pipeline, capture, sink;
@@ -251,13 +251,6 @@ void GstreamerFrameCapture::pipeline_init(const GstreamerEncoderSettings &settin
         throw std::runtime_error("Linking gstreamer's elements failed");
     }
 
-#if XLIB_CAPTURE
-    dpy = XOpenDisplay(nullptr);
-    if (!dpy) {
-        throw std::runtime_error("Unable to initialize X11");
-    }
-#endif
-
     gst_element_set_state(pipeline.get(), GST_STATE_PLAYING);
 
 #if !XLIB_CAPTURE
@@ -290,8 +283,11 @@ void GstreamerFrameCapture::pipeline_init(const GstreamerEncoderSettings &settin
 }
 
 GstreamerFrameCapture::GstreamerFrameCapture(const GstreamerEncoderSettings &settings):
-    settings(settings)
+    dpy(XOpenDisplay(nullptr)),settings(settings)
 {
+    if (!dpy) {
+        throw std::runtime_error("Unable to initialize X11");
+    }
     pipeline_init(settings);
 }
 
@@ -313,9 +309,7 @@ GstreamerFrameCapture::~GstreamerFrameCapture()
 {
     free_sample();
     gst_element_set_state(pipeline.get(), GST_STATE_NULL);
-#if XLIB_CAPTURE
     XCloseDisplay(dpy);
-#endif
 }
 
 void GstreamerFrameCapture::Reset()
