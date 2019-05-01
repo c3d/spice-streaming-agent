@@ -44,7 +44,7 @@ public:
     std::vector<DeviceDisplayInfo> get_device_display_info() const override;
 private:
     MjpegSettings settings;
-    Display *dpy;
+    Display *const dpy;
 
     std::vector<uint8_t> frame;
 
@@ -57,9 +57,8 @@ private:
 }
 
 MjpegFrameCapture::MjpegFrameCapture(const MjpegSettings& settings):
-    settings(settings)
+    settings(settings),dpy(XOpenDisplay(nullptr))
 {
-    dpy = XOpenDisplay(NULL);
     if (!dpy)
         throw std::runtime_error("Unable to initialize X11");
 }
