@@ -16,7 +16,6 @@
 #include <sstream>
 #include <memory>
 #include <syslog.h>
-#include <X11/Xlib.h>
 
 using namespace spice::streaming_agent;
 

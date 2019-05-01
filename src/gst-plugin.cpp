@@ -17,7 +17,6 @@
 
 #define XLIB_CAPTURE 1
 #if XLIB_CAPTURE
-#include <X11/Xlib.h>
 #include <gst/app/gstappsrc.h>
 #endif
 
