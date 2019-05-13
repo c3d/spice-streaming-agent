@@ -116,7 +116,6 @@ AC_DEFUN([gl_MANYWARN_ALL_GCC],
     -Wbuiltin-macro-redefined \
     -Wcast-align \
     -Wchar-subscripts \
-    -Wchkp \
     -Wclobbered \
     -Wcomment \
     -Wcomments \
