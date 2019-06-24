@@ -8,7 +8,6 @@
 #include <cstring>
 #include <exception>
 #include <stdexcept>
-#include <sstream>
 #include <memory>
 #include <syslog.h>
 #include <unistd.h>
@@ -132,34 +131,35 @@ GstElement *GstreamerFrameCapture::get_encoder_plugin(const GstreamerEncoderSett
     GList *filtered;
     GstElement *encoder;
     GstElementFactory *factory = nullptr;
-    std::stringstream caps_ss;
 
     switch (settings.codec) {
     case SPICE_VIDEO_CODEC_TYPE_H264:
-        caps_ss << "video/x-h264" << ",stream-format=(string)byte-stream";
+        sink_caps.reset(gst_caps_new_simple("video/x-h264",
+                                            "stream-format", G_TYPE_STRING, "byte-stream",
+                                            nullptr));
         break;
     case SPICE_VIDEO_CODEC_TYPE_MJPEG:
-        caps_ss << "image/jpeg";
+        sink_caps.reset(gst_caps_new_empty_simple("image/jpeg"));
         break;
     case SPICE_VIDEO_CODEC_TYPE_VP8:
-        caps_ss << "video/x-vp8";
+        sink_caps.reset(gst_caps_new_empty_simple("video/x-vp8"));
         break;
     case SPICE_VIDEO_CODEC_TYPE_VP9:
-        caps_ss << "video/x-vp9";
+        sink_caps.reset(gst_caps_new_empty_simple("video/x-vp9"));
         break;
     case SPICE_VIDEO_CODEC_TYPE_H265:
-        caps_ss << "video/x-h265";
+        sink_caps.reset(gst_caps_new_empty_simple("video/x-h265"));
         break;
     default : /* Should not happen - just to avoid compiler's complaint */
         throw std::logic_error("Unknown codec");
     }
-    caps_ss << ",framerate=" << settings.fps << "/1";
+    gst_caps_set_simple(sink_caps.get(), "framerate", GST_TYPE_FRACTION, settings.fps, 1, nullptr);
+    std::unique_ptr<gchar, decltype(&g_free)> caps_str(gst_caps_to_string(sink_caps.get()), g_free);
 
     encoders = gst_element_factory_list_get_elements(GST_ELEMENT_FACTORY_TYPE_VIDEO_ENCODER, GST_RANK_NONE);
-    sink_caps.reset(gst_caps_from_string(caps_ss.str().c_str()));
     filtered = gst_element_factory_list_filter(encoders, sink_caps.get(), GST_PAD_SRC, false);
     if (filtered) {
-        gst_syslog(LOG_NOTICE, "Looking for encoder plugins which can produce a '%s' stream", caps_ss.str().c_str());
+        gst_syslog(LOG_NOTICE, "Looking for encoder plugins which can produce a '%s' stream", caps_str.get());
         for (GList *l = filtered; l != nullptr; l = l->next) {
             if (!factory && !settings.encoder.compare(GST_ELEMENT_NAME(l->data))) {
                 factory = (GstElementFactory*)l->data;
@@ -169,13 +169,13 @@ GstElement *GstreamerFrameCapture::get_encoder_plugin(const GstreamerEncoderSett
         if (!factory && !settings.encoder.empty()) {
             gst_syslog(LOG_WARNING,
                        "Specified encoder named '%s' cannot produce '%s' stream, make sure matching gst.codec is specified and plugin's availability",
-                       settings.encoder.c_str(), caps_ss.str().c_str());
+                       settings.encoder.c_str(), caps_str.get());
         }
         factory = factory ? factory : (GstElementFactory*)filtered->data;
         gst_syslog(LOG_NOTICE, "'%s' encoder plugin is used", GST_ELEMENT_NAME(factory));
 
     } else {
-        gst_syslog(LOG_ERR, "No suitable encoder was found for '%s'", caps_ss.str().c_str());
+        gst_syslog(LOG_ERR, "No suitable encoder was found for '%s'", caps_str.get());
     }
 
     encoder = factory ? gst_element_factory_create(factory, "encoder") : nullptr;
@@ -351,10 +351,12 @@ void GstreamerFrameCapture::xlib_capture()
         throw std::runtime_error("Failed to wrap image in gstreamer buffer");
     }
 
-    std::stringstream ss;
-
-    ss << "video/x-raw,format=BGRx,width=" << image->width << ",height=" << image->height << ",framerate=" << settings.fps << "/1";
-    GstCapsUPtr caps(gst_caps_from_string(ss.str().c_str()));
+    GstCapsUPtr caps(gst_caps_new_simple("video/x-raw",
+                                         "format", G_TYPE_STRING, "BGRx",
+                                         "width", G_TYPE_INT, image->width,
+                                         "height", G_TYPE_INT, image->height,
+                                         "framerate", GST_TYPE_FRACTION, settings.fps, 1,
+                                         nullptr));
 
     // Push sample
     GstSampleUPtr appsrc_sample(gst_sample_new(buf, caps.get(), nullptr, nullptr));
