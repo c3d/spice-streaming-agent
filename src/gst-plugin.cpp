@@ -216,9 +216,9 @@ void GstreamerFrameCapture::pipeline_init(const GstreamerEncoderSettings &settin
     if (!capture) {
         throw std::runtime_error("Gstreamer's capture element cannot be created");
     }
-    GstObjectUPtr<GstElement> convert(gst_element_factory_make("videoconvert", "convert"));
+    GstObjectUPtr<GstElement> convert(gst_element_factory_make("autovideoconvert", "convert"));
     if (!convert) {
-        throw std::runtime_error("Gstreamer's 'videoconvert' element cannot be created");
+        throw std::runtime_error("Gstreamer's 'autovideoconvert' element cannot be created");
     }
     GstCapsUPtr sink_caps;
     GstObjectUPtr<GstElement> encoder(get_encoder_plugin(settings, sink_caps));
