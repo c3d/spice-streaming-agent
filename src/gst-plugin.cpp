@@ -35,6 +35,7 @@ struct GstreamerEncoderSettings
     int fps = 25;
     SpiceVideoCodecType codec = SPICE_VIDEO_CODEC_TYPE_H264;
     std::string encoder;
+    std::vector<std::pair<std::string, std::string>> prop_pairs;
 };
 
 template <typename T>
@@ -179,11 +180,20 @@ GstElement *GstreamerFrameCapture::get_encoder_plugin(const GstreamerEncoderSett
     }
 
     encoder = factory ? gst_element_factory_create(factory, "encoder") : nullptr;
-    if (encoder) { // Invalid properties will be ignored silently
-        /* x264enc properties */
-        gst_util_set_object_arg(G_OBJECT(encoder), "tune", "zerolatency");// stillimage, fastdecode, zerolatency
-        gst_util_set_object_arg(G_OBJECT(encoder), "bframes", "0");
-        gst_util_set_object_arg(G_OBJECT(encoder), "speed-preset", "1");// 1-ultrafast, 6-med, 9-veryslow
+    if (encoder) { // Set encoder properties
+        for (const auto &prop : settings.prop_pairs) {
+            const auto &name = prop.first;
+            const auto &value = prop.second;
+            if (!g_object_class_find_property(G_OBJECT_GET_CLASS(encoder), name.c_str())) {
+                gst_syslog(LOG_WARNING, "'%s' property was not found for this encoder",
+                           name.c_str());
+                continue;
+            }
+            gst_syslog(LOG_NOTICE, "Trying to set encoder property: '%s = %s'",
+                       name.c_str(), value.c_str());
+            /* Invalid properties will be ignored silently */
+            gst_util_set_object_arg(G_OBJECT(encoder), name.c_str(), value.c_str());
+        }
     }
     gst_plugin_feature_list_free(filtered);
     gst_plugin_feature_list_free(encoders);
@@ -449,6 +459,13 @@ void GstreamerPlugin::ParseOptions(const ConfigureOption *options)
             }
         } else if (name == "gst.encoder") {
             settings.encoder = value;
+        } else if (name == "gst.prop") {
+            size_t pos = value.find('=');
+            if (pos == 0 || pos >= value.size() - 1) {
+                gst_syslog(LOG_WARNING, "Property input is invalid ('%s' Ignored)", value.c_str());
+                continue;
+            }
+            settings.prop_pairs.push_back(make_pair(value.substr(0, pos), value.substr(pos + 1)));
         }
     }
 }
