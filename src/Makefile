@@ -8,9 +8,10 @@ PRODUCTS_agent=	spice-streaming-agent.exe
 PRODUCTS_plugins=$(HAVE_GST_GST_H:%=gst-plugin.dll)
 PRODUCTS_lib=	spice-streaming-agent-utils.lib
 
-PKGCONFIGS=	libjpeg							\
+PKGCONFIGS=	jpeg-turbo?						\
 		gstreamer-1.0?						\
 		gstreamer-app-1.0?					\
+		libjpeg							\
 		x11
 
 ifndef SPICE_PROTOCOL

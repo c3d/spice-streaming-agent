@@ -71,7 +71,9 @@ void write_JPEG_file(std::vector<uint8_t>& buffer, int quality, uint8_t *data, u
     cinfo.image_width = width;
     cinfo.image_height = height;
     cinfo.input_components = 4;
+#ifdef HAVE_JPEG_TURBO
     cinfo.in_color_space = JCS_EXT_BGRX;
+#endif
     jpeg_set_defaults(&cinfo);
     jpeg_set_quality(&cinfo, quality, TRUE);
 
